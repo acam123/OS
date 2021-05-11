@@ -1,0 +1,7 @@
+- qemu-img create -f qcow2 AidanOS.img 1G
+- nasm bootloader.asm -f bin -o bootloader.iso 
+- nasm extended.asm -f bin -o extended.iso
+- cat bootloader.iso > combined.iso
+- cat extended.iso >> combined.iso 
+- qemu-system-x86_64 -fda bootloader.iso -drive file=AidanOS.img -m 512M
+- 
