@@ -1,22 +1,66 @@
 #include "inc/Typedefs.c"
 #include "inc/TextPrint.c"
 #include "inc/TextModeColorCodes.c"
+#include "inc/IDT.c"
+#include "inc/KeyboardHandler.c"
+#include "inc/MemoryMap.c"
 
-extern const char Test[];
+extern int maxofthree(int, int, int);
+extern char Test[];
 
-void _start() {	
+//extern uint_64 AidanMemoryRegionStart;
 
+
+void _start() {		
+	/*
+	PrintString(Test); // LoadBin File Macro
+	*/
+	
 	ClearScreen(BACKGROUND_DEFAULT | FOREGROUND_DEFAULT); 
-	PrintString("\rHello World!!!\n\rTHIS IS A NEW LINE!!!");
 
-	HexToStr(0x1a2b3c4d, sizeof(0x1a2b3c4d));
-	PrintString(HexToStrBuf);
-	PrintChar('Z');
-	PrintString("\n\r");
-	PrintString(IntToStr(581994));
+	InitializeIDT();
+	MainKeyboardHandler = KeyboardHandler;
 
+	//PrintString(IntToStr(MemoryRegionCount));
+	//uint_32 x = GetUsableMemoryRegionCount();
+	//PrintString(IntToStr(x));
 
-	PrintString(Test);
+	//int x = GetUsableMemoryRegionCount(); 
+	//PrintString(IntToStr(x));
+	//PrintString(IntToStr(AidanMemoryRegionStart));
+
+	//PrintString(IntToHex(AidanMemoryRegionStart));
+
+	//PrintMemoryMap((MemoryMapEntry*)0x5000);
+	//PrintUsableMemoryMaps();
+
+	PrintString("Hello World!!! \n\rTHIS is a NEW LINE!!!\n\r");
+
+	char* s = "AIDAN";
+	//PrintAny(s, 0, STR);
+	char** sPtr = &s;
+	PrintAny(sPtr, 0, STR);
+	
+	char c = 'W';
+	char* cPtr = &c;
+	PrintAny(cPtr, 0, CHR);
+
+	int i = 57;
+	int* iPtr = &i;
+	PrintAny(iPtr, 0, DEC);
+
+	int h = 0x32;
+	int* hPtr = &h;
+	PrintAny(hPtr, 0, HEX);
+
+	//PrintChar(*(x));
+
+	//PrintString(x);
+
+	
+	
+	//PrintUsableMemoryMaps();
+
 
 	return;
 }

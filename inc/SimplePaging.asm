@@ -1,24 +1,24 @@
-PageTableEntry equ 0x1000
+;;PageTableEntry equ 0x1000
 
 SetupIdentityPaging:
-	mov edi, PageTableEntry
+	mov edi, [PageTableEntry]
 	mov cr3, edi
 
 	mov dword [edi], 0x2003
-	add edi, PageTableEntry
+	add edi, [PageTableEntry]
 
 	mov dword [edi], 0x3003
-	add edi, PageTableEntry
+	add edi, [PageTableEntry]
 
 	mov dword [edi], 0x4003 
-	add edi, PageTableEntry
+	add edi, [PageTableEntry]
 
 	mov ebx, 0x00000003
 	mov ecx, 512
 
 	.SetEntry:
 		mov dword [edi], ebx
-		add ebx, PageTableEntry
+		add ebx, [PageTableEntry]
 		add edi, 8
 		loop .SetEntry
 

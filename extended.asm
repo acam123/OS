@@ -6,13 +6,16 @@ call PrintString
 
 jmp EnterProtectedMode
 
+%include "inc/GlobalVars.asm"
 %include "inc/PrintString.asm"
 %include "inc/Gdt.asm"
+%include "inc/DetectMemory.asm"
+
 
 
 EnterProtectedMode:
+	call DetectMemory
 	call EnableA20
-
 	cli ;;disable interrupts
 	lgdt [gdt_descriptor]
 	mov eax, cr0
@@ -43,13 +46,6 @@ StartProtectedMode:
 	mov ebp, 0x90000
     mov esp, ebp
 
-	;;mov [0xb8000], byte '!' ;; overwrite BIOS video buffer
-	;;mov [0xb8001], byte 0x0c 
-	;;mov [0xb8002], byte '!' 
-	;;mov [0xb8003], byte 0x09 
-	;;mov [0xb8004], byte '!' 
-	;;mov [0xb8005], byte 0x0a 
-
 	call DetectCPUID
 	call DetectLongMode
 	call SetupIdentityPaging
@@ -59,15 +55,10 @@ StartProtectedMode:
 
 [bits 64]
 [extern _start]
-
+%include "inc/IDT.asm"
+%include "inc/LoadBins.asm"
 
 Start64BitMode:
-
-	;;mov edi, 0xb8000
-	;;mov rax, 0x0000000001f001f00
-	;;mov ecx, 1
-	;;rep stosq
-
 
 	call _start
 
@@ -78,3 +69,5 @@ ExtendedString:
 	db '...This is Extended Space...',0
 
 times 2048-($-$$) db 0
+
+
