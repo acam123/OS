@@ -1,14 +1,10 @@
-#include "inc/Typedefs.c"
-#include "inc/TextPrint.c"
-#include "inc/TextModeColorCodes.c"
-#include "inc/IDT.c"
-#include "inc/KeyboardHandler.c"
-#include "inc/MemoryMap.c"
+#include "kernel.h"
 
-extern int maxofthree(int, int, int);
-extern char Test[];
+//extern int maxofthree(int, int, int);
+//extern char Test[];
 
 //extern uint_64 AidanMemoryRegionStart;
+
 
 
 void _start() {		
@@ -17,9 +13,12 @@ void _start() {
 	*/
 	
 	ClearScreen(BACKGROUND_DEFAULT | FOREGROUND_DEFAULT); 
-
 	InitializeIDT();
+	SetCursorPosition(0);
 	MainKeyboardHandler = KeyboardHandler;
+
+
+
 
 	//PrintString(IntToStr(MemoryRegionCount));
 	//uint_32 x = GetUsableMemoryRegionCount();
@@ -59,7 +58,8 @@ void _start() {
 
 	
 	
-	//PrintUsableMemoryMaps();
+	PrintUsableMemoryMaps();
+	
 
 
 	return;

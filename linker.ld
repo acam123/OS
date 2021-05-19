@@ -6,6 +6,12 @@ INPUT
 (
 	extended.o
 	kernel.o
+	inc/IDT.o
+	inc/IO.o
+	inc/KeyboardHandler.o
+	inc/MemoryMap.o
+	inc/TextPrint.o
+	inc/KeyboardScanCodeSet.o
 )
 
 OUTPUT

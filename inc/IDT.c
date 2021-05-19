@@ -1,19 +1,4 @@
-#pragma once
-#include "Typedefs.c"
-#include "IO.c"
-#include "TextPrint.c"
-#include "KeyboardScanCodeSet.c"
-
-// Interrupt Descriptor Table
-typedef struct idt64 {
-	uint_16 offset_low;
-	uint_16 selector;
-	uint_8 ist;
-	uint_8 types_attr;
-	uint_16 offset_mid;
-	uint_32 offset_high;
-	uint_32 zero;
-} IDT64;
+#include "IDT.h"
 
 // Interrupt Vector Table in linker 
 extern IDT64 _idt[256];
@@ -25,6 +10,7 @@ extern void LoadIDT();
 
 void InitializeIDT() {
 
+	// IDT for Keyboard
 	_idt[1].zero = 0;
 	_idt[1].offset_low = (uint_16)(((uint_64)&isr1 & 0x000000000000ffff));
 	_idt[1].offset_mid = (uint_16)(((uint_64)&isr1 & 0x00000000ffff0000) >> 16);
@@ -43,7 +29,6 @@ void InitializeIDT() {
 }
 
 void(*MainKeyboardHandler)(uint_8 scanCode, uint_8 chr);
-
 extern void isr1_handler() {
 	uint_8 scanCode = inb(0x60);
 	uint_8 chr = 0;

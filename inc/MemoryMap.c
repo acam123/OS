@@ -1,31 +1,13 @@
-#pragma once
-#include "Typedefs.c"
-#include "TextPrint.c"
+#include "MemoryMap.h"
 
-typedef struct memoryMapEntry {
-	uint_64 BaseAddress;
-	uint_64 RegionLength;
-	uint_32 RegionType;
-	uint_32 ExtendedAttributes;
-} MemoryMapEntry;
 
-extern uint_8 MemoryRegionCount;
 extern uint_64 MemoryMapStart;
 
 //extern uint_8 UsableMemoryRegionCount;
 //extern MemoryMapEntry* UsableMemoryRegions[10];
 
-void AidanTest() {
-	void* ptr = (void*) MemoryMapStart;
-	PrintString(IntToStr(MemoryMapStart));
-	PrintString("\n\r");
-	PrintString(IntToStr(sizeof(MemoryMapStart)));
-	PrintString("\n\r");
-	PrintString(IntToStr((uint_64)ptr));
 
-}
-
-void PrintMemoryMap( MemoryMapEntry* memMap) {
+void PrintMemoryMap( MemoryMapEntry* memMap ) {
 	PrintString("\n\rMemory Base: "); 
 	PrintString(IntToStr(memMap->BaseAddress));
 	PrintString("\n\rRegion Length: "); 

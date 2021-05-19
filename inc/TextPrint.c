@@ -1,12 +1,4 @@
-#pragma once
-#include "IO.c"
-#include "Typedefs.c"
-#include "TextModeColorCodes.c"
-
-#define VGA_MEMORY (uint_8*) 0xb8000
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
-#define VGA_AREA (VGA_WIDTH * VGA_HEIGHT)
+#include "TextPrint.h"
 
 uint_16 CursorPosition;
 
@@ -41,6 +33,7 @@ uint_16 PositionFromCoords(uint_8 x, uint_8 y) {
 }
 
 void PrintString (const char* str) {
+	
 	uint_8* charPtr = (uint_8*)str;
 	uint_16 index = CursorPosition;
 	while (*charPtr != 0) {
@@ -105,7 +98,6 @@ char* IntToStr(uint_64 val) {
 	return IntToStrBuf;
 }
 
-enum pType {STR, CHR, DEC, HEX, FLT};
 void PrintAny(void* ptr, int sz, int typ) {
 	switch (typ) {
 		case STR:

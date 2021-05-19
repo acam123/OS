@@ -1,6 +1,4 @@
-#pragma once
-
-#include "KeyboardScanCodeSet.c"
+#include "KeyboardHandler.h"
 
 uint_8 LeftShiftOn = 0;
 uint_8 RightShiftOn = 0;
