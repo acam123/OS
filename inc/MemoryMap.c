@@ -15,7 +15,7 @@ void PrintMemoryMap( MemoryMapEntry* memMap ) {
 	PrintString("\n\rMemory Type: "); 
 	PrintString(IntToStr(memMap->RegionType));
 	PrintString("\n\rMemory Attributes: ");
-	PrintString(HexToStr(memMap->ExtendedAttributes, sizeof(memMap->ExtendedAttributes)));
+	PrintString(HexToStr(memMap->ExtendedAttributes));
 	PrintString("\n\r");
 }
 

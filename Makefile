@@ -36,3 +36,7 @@ combined.iso : bootloader.bin kernel.bin
 
 run : combined.iso AidanOS.img
 	qemu-system-x86_64 -fda combined.iso -drive file=AidanOS.img -m 512M
+
+.PHONY : clean
+clean :
+	-rm *.o *.bin inc/*.o

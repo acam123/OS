@@ -17,6 +17,7 @@ void ClearScreen (uint_64 color);
 uint_16 PositionFromCoords(uint_8 x, uint_8 y);
 void PrintString (const char* str);
 void PrintChar (char chr);
-char* HexToStr(uint_64 val, uint_8 sz);
+uint_64 HexLen(uint_64 val);
+char* HexToStr(uint_64 val);
 char* IntToStr(uint_64 val);
 void PrintAny(void* ptr, int sz, int typ);
