@@ -1,6 +1,7 @@
 #pragma once
 #include "Typedefs.h"
 #include "TextPrint.h"
+#include "PageAllocator.h"
 
 typedef struct memoryMapEntry {
 	uint_64 BaseAddress;
@@ -15,4 +16,8 @@ void PrintMemoryMap(MemoryMapEntry* memMap);
 void PrintMemoryMaps();
 void PrintUsableMemoryMaps();
 uint_32 GetUsableMemoryRegionCount();
+MemoryMapEntry* GetLargestUsableMemoryEntry();
+uint_64 GetSystemMemorySize();
+void ReserveSystemMemory();
+
 

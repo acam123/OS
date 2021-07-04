@@ -34,7 +34,9 @@ void StandardKeyboardHandler(uint_8 scanCode, uint_8 chr) {
 				RightShiftOn = 0;
 				break;
 			case 0x9c: // Return
+				//PrintString("\n\r");
 				PrintString("\n\r");
+				//SetCursorPosition(CursorPosition + VGA_WIDTH - CursorPosition%VGA_WIDTH);
 				break;
 			case 0x0f: // Tab
 				PrintString("    ");

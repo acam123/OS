@@ -12,6 +12,10 @@ INPUT
 	inc/MemoryMap.o
 	inc/TextPrint.o
 	inc/KeyboardScanCodeSet.o
+	inc/Bitmap.o
+	inc/PageAllocator.o
+	inc/PageTable.o
+	inc/Heap.o
 )
 
 OUTPUT
@@ -23,32 +27,39 @@ SECTIONS
 {
 	. = 0x8000;
 
+	_Kernel_Start = .;
+
 	.text : ALIGN(0x1000)
 	{
+		_text_sect = .;
 		*(.text)
 	}
 
 	.idt BLOCK(0x1000) : ALIGN(0x1000)
 	{
-		_idt = .;
+		_idt = .; 
 		. = . + 0x1000;
 	}
 
 	.data : ALIGN(0x1000)
 	{
+		_data_sect = .;
 		*(.data)
 	}
 
 	.rodata : ALIGN(0x1000)
 	{
+		_rodata_sect = .;
 		*(.rodata)
 	}
 
 	.bss : ALIGN(0x1000)
 	{
+		_bss_sect = .;
 		*(COMMON)
 		*(.bss)
 	}
 
+	_Kernel_End = .;
 
 }

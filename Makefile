@@ -1,3 +1,9 @@
+CC = x86_64-elf-gcc
+CFLAGS = -Ttext 0x8000 -ffreestanding -mno-red-zone -m64
+#CFLAGS = -ffreestanding -mno-red-zone -m64
+
+OBJS = kernel.o inc/IDT.o inc/IO.o inc/KeyboardHandler.o inc/MemoryMap.o inc/TextPrint.o inc/KeyboardScanCodeSet.o inc/Bitmap.o inc/PageAllocator.o inc/PageTable.o inc/Heap.o
+
 all : combined.iso 
 
 bootloader.bin : bootloader.asm
@@ -6,28 +12,10 @@ bootloader.bin : bootloader.asm
 extended.o : extended.asm
 	nasm extended.asm -f elf64 -o $@
 
-kernel.o : kernel.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "kernel.c" -o $@
+$(OBJS): %.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
 
-inc/IDT.o : inc/IDT.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "inc/IDT.c" -o $@
-
-inc/IO.o : inc/IO.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "inc/IO.c" -o $@
-
-inc/KeyboardHandler.o : inc/KeyboardHandler.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "inc/KeyboardHandler.c" -o $@
-
-inc/MemoryMap.o : inc/MemoryMap.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "inc/MemoryMap.c" -o $@
-
-inc/TextPrint.o : inc/TextPrint.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "inc/TextPrint.c" -o $@
-
-inc/KeyboardScanCodeSet.o : inc/KeyboardScanCodeSet.c
-	x86_64-elf-gcc -Ttext 0x8000 -ffreestanding -mno-red-zone -m64 -c "inc/KeyboardScanCodeSet.c" -o $@
-
-kernel.bin : extended.o kernel.o inc/IDT.o inc/IO.o inc/KeyboardHandler.o inc/MemoryMap.o inc/TextPrint.o inc/KeyboardScanCodeSet.o
+kernel.bin : extended.o $(OBJS)
 	x86_64-elf-ld -T"linker.ld"
 
 combined.iso : bootloader.bin kernel.bin
@@ -40,3 +28,4 @@ run : combined.iso AidanOS.img
 .PHONY : clean
 clean :
 	-rm *.o *.bin inc/*.o
+

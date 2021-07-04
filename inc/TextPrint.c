@@ -1,9 +1,10 @@
 #include "TextPrint.h"
 
-uint_16 CursorPosition;
+uint_16 CursorPosition; // 0-VGA_AREA, position of cursor relative to start of Viewable Screen Window
 
-uint_16 ScreenOffsetIntoBuffer;
+uint_16 ScreenOffset; // 0-(SCREEN_BUF_SIZE - VGA_AREA), position of start of Viewable Screen Window relative to start of ScreenBuffer
 
+//uint_16 BufferPosition; // 0-SCREEN_BUF_SIZE, position of cursor relative to start of ScreenBuffer
 
 uint_16 ScreenBuffer[SCREEN_BUF_SIZE];
 
@@ -30,19 +31,71 @@ void fillScreenBuf() {
 	memcpy((char*)ScreenBuffer, (char*) VGA_MEMORY, SCREEN_BUF_SIZE);
 
 	//Initialize ScreenOffsettIntoBuffer
-	ScreenOffsetIntoBuffer = 0;
+	ScreenOffset = 0;
 }
 
+//Always write to buffer (fix in keyboard handler)
+//Buffer all writes 1 line at a time
+
+void SetCursorPosition (sint_16 newPosition) {
+	// NOTE: newPosition is requested new value for CursorPosition (relative to Viewable Screen Window)
+
+	// Check if newPosition is outisde of curent Viewable Screen Window bounds
+	if (newPosition >= VGA_AREA) {
+		// Check if newPosition is outside of ScreenBuffer bounds
+		if ( (ScreenOffset + newPosition) >= SCREEN_BUF_SIZE ) {
+			// CAN'T WRITE BEYOND BUFFER!!! Need to feed single line at a time in order to shift buffer !!!
+			// Forget oldest line(s) of Screen Buffer and shift down to fit new content 
+			newPosition = newPosition % VGA_WIDTH + VGA_AREA - VGA_WIDTH;
+			memcpy((char*)(ScreenBuffer+VGA_WIDTH), (char*)(ScreenBuffer), SCREEN_BUF_SIZE*2 - VGA_WIDTH*2);
+			ClearBufLine(BACKGROUND_DEFAULT | FOREGROUND_DEFAULT, SCREEN_BUF_SIZE/VGA_WIDTH -1);
+			
+
+		}
+		else {
+			// Slide ScreenOffset and update VGA_MEMORY to reflect
+			ScreenOffset += VGA_WIDTH;//(((newPosition-VGA_AREA)/VGA_WIDTH)+1) * VGA_WIDTH;
+			newPosition = newPosition % VGA_WIDTH + VGA_AREA - VGA_WIDTH;
+
+		}
+	}
+	else if (newPosition < 0) {
+		// Check if newPosition is outside the ScreenBuffer bounds
+		if (ScreenOffset + newPosition < 0) {
+			// Bound the ScreenOffset and Update VGA Memory to reflect
+			ScreenOffset = 0;
+			newPosition = VGA_WIDTH + newPosition; //%VGA_WIDTH
+			
+		}
+		else {
+			// Slide the ScreenOffset and Update VGA Memory to reflect
+			ScreenOffset += (((newPosition+1)/VGA_WIDTH)-1) * VGA_WIDTH; 
+			newPosition = ((newPosition+1)%VGA_WIDTH) - 1 + VGA_WIDTH; //VGA_WIDTH + (newPosition+1) % VGA_WIDTH - 1;//-1 * newPosition % VGA_WIDTH; 
+			
+		}
+
+	}
+	memcpy ( (char*)(ScreenBuffer + ScreenOffset), VGA_MEMORY, VGA_AREA*2);
 
 
-void SetCursorPosition (sint_16 position) {
+	// Send position to screen
+	outb(REG_SCREEN_CTRL, 0x0f); // cursor offset low byte
+	outb(REG_SCREEN_DATA, (uint_8)(newPosition & 0xff));
+	outb(REG_SCREEN_CTRL, 0x0e); // cursor offset high byte
+	outb(REG_SCREEN_DATA, (uint_8)((newPosition >> 8) & 0xff));
+
+	//Update global position variable
+	CursorPosition = (uint_16) newPosition;
+}
+
+void SetCursorPositionOLD (sint_16 position) {
 	if (position >= VGA_AREA) {
 		// save updated terminal to buffer 
-		memcpy(VGA_MEMORY,(char*)(ScreenBuffer+ScreenOffsetIntoBuffer), VGA_AREA*2);
+		memcpy(VGA_MEMORY,(char*)(ScreenBuffer+ScreenOffset), VGA_AREA*2);
 		
-		if (ScreenOffsetIntoBuffer < (SCREEN_BUF_SIZE - VGA_AREA)) {
+		if (ScreenOffset < (SCREEN_BUF_SIZE - VGA_AREA)) {
 			// set terminal screen to shift within buffer
-			ScreenOffsetIntoBuffer += VGA_WIDTH;
+			ScreenOffset += VGA_WIDTH;
 		}
 		else {
 			// grab updated terminal window, lose oldest line and add a new line to buffer
@@ -50,18 +103,18 @@ void SetCursorPosition (sint_16 position) {
 			ClearBufLine(BACKGROUND_DEFAULT | FOREGROUND_DEFAULT, SCREEN_BUF_SIZE/VGA_WIDTH -1);
 		}
 		// update terminal window based on shift/update of buffer 
-		memcpy((char*)(ScreenBuffer+ScreenOffsetIntoBuffer), (char*)(VGA_MEMORY), VGA_AREA*2);
+		memcpy((char*)(ScreenBuffer+ScreenOffset), (char*)(VGA_MEMORY), VGA_AREA*2);
 		position = position - VGA_WIDTH;
 	}
 	else if (position < 0 ) {
 		// save updated terminal to buffer 
-		memcpy(VGA_MEMORY,(char*)(ScreenBuffer+ScreenOffsetIntoBuffer), VGA_AREA*2);
-		if (ScreenOffsetIntoBuffer >= VGA_WIDTH) {
+		memcpy(VGA_MEMORY,(char*)(ScreenBuffer+ScreenOffset), VGA_AREA*2);
+		if (ScreenOffset >= VGA_WIDTH) {
 			// set terminal screen to shift within buffer
-			ScreenOffsetIntoBuffer -= VGA_WIDTH;
+			ScreenOffset -= VGA_WIDTH;
 		}
 		// grab updated terminal window (possibly shifted) 
-		memcpy((char*)(ScreenBuffer + ScreenOffsetIntoBuffer), (char*)VGA_MEMORY, VGA_AREA*2);
+		memcpy((char*)(ScreenBuffer + ScreenOffset), (char*)VGA_MEMORY, VGA_AREA*2);
 		position = position + VGA_WIDTH;
 	}
 
@@ -131,8 +184,11 @@ void InitializeScreen (uint_64 color) {
 		*ptr = reg; 
 		ptr++;
 	}
+
+	ScreenOffset = 0;
+	//BufferPosition = 0;
 	SetCursorPosition(0);
-	ScreenOffsetIntoBuffer = 0;
+
 	memcpy((char*)ScreenBuffer, (char*)VGA_MEMORY, VGA_AREA*2);
 }
 
@@ -148,7 +204,40 @@ uint_8 yCoordFromPosition(uint_16 position) {
 	return (position / VGA_WIDTH) - (position % VGA_WIDTH);
 }
 
-void PrintString (const char* str) {
+
+void PrintString(const char* str) {
+	uint_8* charPtr = (uint_8*)str;
+	uint_16 index = CursorPosition;
+	uint_16 tmp;
+	uint_16 prev;
+	uint_8 newLine = 0;
+	while (*charPtr != 0) {
+		switch (*charPtr) {
+			case 10:
+				index += VGA_WIDTH;
+				break;
+			case 13:
+				index -= (index % VGA_WIDTH);
+				break;
+			default:
+				prev = *(ScreenBuffer + ScreenOffset + index) & 0xff00;
+				tmp = (uint_16) *charPtr & 0x00ff;
+				*(ScreenBuffer + ScreenOffset + index) = prev | tmp;
+				index++;
+				if (index % VGA_WIDTH == 0) { newLine = 1;}
+				break;
+		}
+		charPtr++;
+
+		if (newLine == 1) {
+			SetCursorPosition(index);
+			newLine = 0;
+		}
+	}	
+	SetCursorPosition(index);
+}
+
+void PrintStringOLD (const char* str) {
 	uint_8* charPtr = (uint_8*)str;
 	uint_16 index = CursorPosition;
 	while (*charPtr != 0) {
@@ -159,7 +248,7 @@ void PrintString (const char* str) {
 			case 13:
 				index -= (index % VGA_WIDTH);
 				break;
-			default:
+			default: 
 				*(VGA_MEMORY + index * 2) = *charPtr;
 				index++;
 		}
@@ -167,7 +256,16 @@ void PrintString (const char* str) {
 	}
 
 	SetCursorPosition(index);
+}
 
+void memset(uint_64 val, uint_64* dest, uint_64 num) {
+	if (1) {
+		uint_8* valByte = (uint_8*)&val;
+		for(uint_8* destByte = (uint_8*)dest; destByte < (uint_8*)(uint_64)dest + num; destByte++) {
+			*destByte = *valByte;
+		}
+		return;
+	}
 }
 
 /* Copy bytes from one place to another. */
@@ -184,9 +282,17 @@ void memcpyRev (char* src, char* dst, int len) {
 	}
 }
 
-void PrintChar (char chr) {
+void PrintCharOLD (char chr) {
 	uint_16 index = CursorPosition;
 	*(VGA_MEMORY + index * 2) = chr;
+	SetCursorPosition(++index);
+}
+
+void PrintChar (char chr) {
+	uint_16 index = CursorPosition;
+	uint_16 prev = *(ScreenBuffer + ScreenOffset + index) & 0xff00;
+	uint_16 tmp = (uint_16) chr & 0x00ff;
+	*(ScreenBuffer + ScreenOffset + index) = prev | tmp;
 	SetCursorPosition(++index);
 }
 

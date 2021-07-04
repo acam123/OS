@@ -25,6 +25,8 @@ void InitializeScreen (uint_64 color);
 void ClearScreen (uint_64 color);
 uint_16 PositionFromCoords(uint_8 x, uint_8 y);
 void PrintString (const char* str);
+void PrintBuffer (const char* str);
+void memset(uint_64 val, uint_64* dest, uint_64 num);
 void memcpy(char* src, char* dst, int len);
 void memcpyRev (char* src, char* dst, int len);
 void PrintChar (char chr);
