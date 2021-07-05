@@ -142,7 +142,7 @@ FreeNode* splitList(FreeNode* list, FreeNode** l, FreeNode** r) {
 	*l = list;
 	*r = mid->next;
 	mid->next = (FreeNode*)0x0;
-	return *r;
+	return *r; 
 }
 
 FreeNode* merge(FreeNode* l, FreeNode* r) {
