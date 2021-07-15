@@ -54,7 +54,7 @@ PrintHex:
 
 	;; Print Hex
 	mov bx, HEX_OUT
-	call PrintString
+	call print_string
 ret
 
 HEX_OUT:

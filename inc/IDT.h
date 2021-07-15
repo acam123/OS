@@ -1,19 +1,25 @@
-#pragma once
+#ifndef _IDT_
+#define _IDT_
+
 #include "Typedefs.h"
 #include "IO.h"
 #include "TextPrint.h"
 #include "KeyboardScanCodeSet.h"
+#include "Mouse.h"
+#include "PIT.h"
 
 // Interrupt Descriptor Table
 typedef struct idt64 {
-	uint_16 offset_low;
-	uint_16 selector;
-	uint_8 ist;
-	uint_8 types_attr;
-	uint_16 offset_mid;
-	uint_32 offset_high;
-	uint_32 zero;
-} IDT64;
+	uint16_t offset_low;
+	uint16_t selector;
+	uint8_t ist;
+	uint8_t types_attr;
+	uint16_t offset_mid;
+	uint32_t offset_high;
+	uint32_t zero;
+} idt64;
 
-extern void(*MainKeyboardHandler)(uint_8 scanCode, uint_8 chr);
-void InitializeIDT();
+extern void(*main_keyboard_handler)(uint8_t scan_code, uint8_t chr);
+void init_idt();
+
+#endif

@@ -1,6 +1,6 @@
 #include "KeyboardScanCodeSet.h"
 
-char ScanCodeLookupTable[ScanCodeCount] = {
+char scan_code_lookup_table[scan_code_count] = {
      0 ,  0 , '1', '2',
     '3', '4', '5', '6',
     '7', '8', '9', '0',
@@ -18,7 +18,7 @@ char ScanCodeLookupTable[ScanCodeCount] = {
      0 , ' '
   };
 
-char ScanCodeLookupTableShift[ScanCodeCount] = {
+char scan_code_lookup_tableShift[scan_code_count] = {
 	 0,   0,  '!', '@',
 	'#', '$', '%', '^',
 	'&', '*', '(', ')',

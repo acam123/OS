@@ -23,6 +23,14 @@ idtDescriptor:
 	pop rax
 %endmacro
 
+[extern isr0_handler]
+isr0:
+	PUSHALL
+	call isr0_handler
+	POPALL
+	iretq
+	GLOBAL isr0
+
 [extern isr1_handler]
 isr1:
 	PUSHALL
@@ -31,8 +39,24 @@ isr1:
 	iretq
 	GLOBAL isr1
 
-LoadIDT:
+[extern isr12_handler]
+isr12:
+	PUSHALL
+	call isr12_handler
+	POPALL
+	iretq
+	GLOBAL isr12
+
+[extern isr14_handler]
+isr14:
+	PUSHALL
+	call isr14_handler
+	POPALL
+	iretq
+	GLOBAL isr14
+
+load_idt:
 	lidt[idtDescriptor]
 	sti
 	ret
-	GLOBAL LoadIDT
+	GLOBAL load_idt

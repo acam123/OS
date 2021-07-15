@@ -7,7 +7,7 @@ mov bp,0x7c00;; initialize base pointer *maybe 0x9000 or 0x7BFF
 mov sp, bp;; initialize stack pointer to bootloader origin
 
 mov bx, InitializationString;; set bx to point to string data location
-call PrintString
+call print_string
 
 ;;mov bx, 0x1fb6
 ;;call PrintHex

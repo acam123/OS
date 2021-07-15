@@ -1,6 +1,9 @@
-#pragma once
+#ifndef _KEYBOARD_SCANCODE_SET_1_ 
+#define _KEYBOARD_SCANCODE_SET_1_ 
 
-#define ScanCodeCount 58
+#define scan_code_count 58
 
-extern char ScanCodeLookupTable[ScanCodeCount];
-extern char ScanCodeLookupTableShift[ScanCodeCount];
+extern char scan_code_lookup_table[scan_code_count];
+extern char scan_code_lookup_tableShift[scan_code_count];
+
+#endif

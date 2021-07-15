@@ -1,124 +1,124 @@
 #include "Bitmap.h"
 
-uint_64* BITMAP_SIZE; // # of pages of memory 
-uint_64* ptrBitmap = 0x0;
+uint64_t* BITMAP_SIZE; // # of pages of memory 
+uint64_t* ptr_bitmap = 0x0;
 
 
-void initBitmap() {
-	uint_64 memorySize = GetSystemMemorySize();
-	*BITMAP_SIZE = (uint_64) (memorySize / PAGE_SIZE); //num pages of memory (PAD!!!)
-	ptrBitmap = (uint_64*) pageAlign(GetLargestUsableMemoryEntry()->BaseAddress);
-	uint_64 byteALignedBitmapSize = byteAlign((*BITMAP_SIZE)); //pad bitmap to a byte
-	for (uint_64 i=0; i<(byteALignedBitmapSize/8); i++) {
-		*(ptrBitmap+i) = 0b00000000;
+void init_bitmap() {
+	uint64_t memory_size = get_system_memory_size();
+	*BITMAP_SIZE = (uint64_t) (memory_size / PAGE_SIZE); //num pages of memory (PAD!!!)
+	ptr_bitmap = (uint64_t*) page_align(get_largest_usable_memory_entry()->base_address);
+	uint64_t byte_aligned_bitmap_size = byte_align((*BITMAP_SIZE)); //pad bitmap to a byte
+	for (uint64_t i=0; i<(byte_aligned_bitmap_size/8); i++) {
+		*(ptr_bitmap+i) = 0b00000000;
 	}
 	return;
 }
 
-uint_64 byteAlign (uint_64 addr) {
+uint64_t byte_align (uint64_t addr) {
 	if (addr % 8 != 0) {
 		addr + 8 - addr % 8;
 	}
 	return addr;
 }
 
-void printBitMapSize() {
-	PrintString("Bitmap Size: ");
-	PrintString(HexToStr((uint_64)*BITMAP_SIZE));
+void print_bitmap_size() {
+	print_string("Bitmap Size: ");
+	print_string(hex_to_str((uint64_t)*BITMAP_SIZE));
 	return;
 }
 
 
-void fillBitmap() {
-	for (int i=0; i<(byteAlign(*BITMAP_SIZE)/8); i++) {
+void fill_bitmap() {
+	for (int i=0; i<(byte_align(*BITMAP_SIZE)/8); i++) {
 		//Bitmap[i] = i;
-		*(ptrBitmap + i)  = i%256;
+		*(ptr_bitmap + i)  = i%256;
 	}
 	return;
 }
 
-void printBitmapHead() {
+void print_bitmap_head() {
 	for (int i=0; i<8; i++) {
-		uint_8 byte = *(ptrBitmap + i);//Bitmap[i];
+		uint8_t byte = *(ptr_bitmap + i);//Bitmap[i];
 		for (int j=0; j<8; j++) {
-			uint_8 mask = 0b10000000;
+			uint8_t mask = 0b10000000;
 			mask = mask >> j;
 			
-			uint_8 bit = byte & mask;
+			uint8_t bit = byte & mask;
 			bit = bit >> (8-1-j);
-			PrintString(IntToStr(bit));
-			PrintString(", ");
+			print_string(int_to_str(bit));
+			print_string(", ");
 		}
-		PrintString("\n\r");
+		print_string("\n\r");
 	}
 	return;
 }
 
-void printBitmapFor(uint_64 addr) {
-	uint_8 len = 8;
-	uint_64 strt = addr / PAGE_SIZE;
-	uint_8 bit;
+void print_bitmap_for(uint64_t addr) {
+	uint8_t len = 8;
+	uint64_t strt = addr / PAGE_SIZE;
+	uint8_t bit;
 	
 	for (int i=0; i<len; i++) {
 		for (int j=0; j<8; j++) {
-			bit = BitmapGet(strt + i*8 + j);
+			bit = bitmap_get(strt + i*8 + j);
 			if (bit == '*') {
-				PrintChar(bit);
+				print_char(bit);
 			}
 			else {
-				PrintString(IntToStr(bit));
+				print_string(int_to_str(bit));
 			}
-			PrintString(", ");
+			print_string(", ");
 		}
-		PrintString("\n\r");
+		print_string("\n\r");
 	}
 
 	return;
 }
 
-void printBitmapTail() {
-	uint_8 byte;
-	uint_64 byteIndx;
-	uint_8 tailLen = 8;
-	for (int i=0; i<tailLen; i++) {
-		byteIndx = byteAlign(*BITMAP_SIZE)/8 - tailLen + i;
-		byte = *( ptrBitmap + byteIndx );
+void print_bitmap_tail() {
+	uint8_t byte;
+	uint64_t byte_indx;
+	uint8_t tail_len = 8;
+	for (int i=0; i<tail_len; i++) {
+		byte_indx = byte_align(*BITMAP_SIZE)/8 - tail_len + i;
+		byte = *( ptr_bitmap + byte_indx );
 		for (int j=0; j<8; j++) {
-			uint_8 mask = 0b10000000;
+			uint8_t mask = 0b10000000;
 			mask = mask >> j;
 			
-			uint_8 bit = byte & mask;
+			uint8_t bit = byte & mask;
 			bit = bit >> (8-1-j);
 
 			// Hide bitmap padding if present
-			if ( byteIndx * 8 + j >= *BITMAP_SIZE ) { bit = '*';}
-			PrintString(IntToStr(bit));
-			PrintString(", ");
+			if ( byte_indx * 8 + j >= *BITMAP_SIZE ) { bit = '*';}
+			print_string(int_to_str(bit));
+			print_string(", ");
 		}
-		PrintString("\n\r");
+		print_string("\n\r");
 	}
 	return;
 }
 
-uint_8 BitmapGet(uint_64 indx) {
-	uint_8 bit;
+uint8_t bitmap_get(uint64_t indx) {
+	uint8_t bit;
 	if (indx < 0 | indx >= (*BITMAP_SIZE) ) {
 		bit = '*';
 	}
 	else {
-		uint_8 shift = indx % 8;
-		uint_8 byte = *(ptrBitmap + indx / 8);
-		uint_8 mask = 0b10000000 >> (shift);
+		uint8_t shift = indx % 8;
+		uint8_t byte = *(ptr_bitmap + indx / 8);
+		uint8_t mask = 0b10000000 >> (shift);
 		bit = (byte & mask) >> (8-1-shift);
 	}
 	return bit; 
 }
 
-void BitmapSet(uint_64 bitIndx, uint_8 bit) {
-	uint_8 shift = bitIndx % 8;
-	uint_64 byteIndx = bitIndx / 8;
-	uint_8 byte = *(ptrBitmap + byteIndx);
-	uint_8 mask = 1 << (8-1-shift);
+void bitmap_set(uint64_t bit_indx, uint8_t bit) {
+	uint8_t shift = bit_indx % 8;
+	uint64_t byte_indx = bit_indx / 8;
+	uint8_t byte = *(ptr_bitmap + byte_indx);
+	uint8_t mask = 1 << (8-1-shift);
 	switch (bit) {
 		case 0:
 			byte &= ~mask;
@@ -129,7 +129,7 @@ void BitmapSet(uint_64 bitIndx, uint_8 bit) {
 		default: 
 			return;
 	}
-	*(ptrBitmap + byteIndx) = byte;
+	*(ptr_bitmap + byte_indx) = byte;
 	return;
 }
 

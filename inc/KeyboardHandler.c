@@ -1,57 +1,57 @@
 #include "KeyboardHandler.h"
 
-uint_8 LeftShiftOn = 0;
-uint_8 RightShiftOn = 0;
-uint_8 CapsLockOn = 0;
-uint_8 LastScanCode = 0x00;
+uint8_t left_shift_on = 0;
+uint8_t right_shift_on = 0;
+uint8_t caps_lock_on = 0;
+uint8_t last_scan_code = 0x00;
 
-void StandardKeyboardHandler(uint_8 scanCode, uint_8 chr) {
+void standard_keyboard_handler(uint8_t scan_code, uint8_t chr) {
 	if (chr != 0) { 
-		if (!(LeftShiftOn|RightShiftOn|CapsLockOn) ) {
-			PrintChar(chr);
+		if (!(left_shift_on|right_shift_on|caps_lock_on) ) {
+			print_char(chr);
 		}
 		else {
-			PrintChar(ScanCodeLookupTableShift[scanCode]);
+			print_char(scan_code_lookup_tableShift[scan_code]);
 		}
 	}
 	else {
-		switch (scanCode) {
+		switch (scan_code) {
 			case 0x8e: // Backspace
-				SetCursorPosition(CursorPosition - 1);
-				PrintChar(chr);
-				SetCursorPosition(CursorPosition - 1);
+				set_cursor_position(cursor_position - 1);
+				print_char(chr);
+				set_cursor_position(cursor_position - 1);
 				break;
 			case 0x2a: // Left Shift
-				LeftShiftOn = 1;
+				left_shift_on = 1;
 				break;
 			case 0xaa: // Left Shift
-				LeftShiftOn = 0;
+				left_shift_on = 0;
 				break;
 			case 0x36: // Left Shift
-				RightShiftOn = 1;
+				right_shift_on = 1;
 				break;
 			case 0xb6: // Left Shift
-				RightShiftOn = 0;
+				right_shift_on = 0;
 				break;
 			case 0x9c: // Return
-				//PrintString("\n\r");
-				PrintString("\n\r");
-				//SetCursorPosition(CursorPosition + VGA_WIDTH - CursorPosition%VGA_WIDTH);
+				//print_string("\n\r");
+				print_string("\n\r");
+				//set_cursor_position(cursor_position + VGA_WIDTH - cursor_position%VGA_WIDTH);
 				break;
 			case 0x0f: // Tab
-				PrintString("    ");
+				print_string("    ");
 				break;
 			case 0x01: // Esc
-				PrintString("[ESC]");
+				print_string("[ESC]");
 				break;
 			case 0x38: // Alt
-				PrintString("[ALT]");
+				print_string("[ALT]");
 				break;
 			case 0x1d: // Ctrl
-				PrintString("[CTRL]");
+				print_string("[CTRL]");
 				break;
 			case 0x3a: //Caps 
-				CapsLockOn = (CapsLockOn == 1 ? 0 : 1);
+				caps_lock_on = (caps_lock_on == 1 ? 0 : 1);
 				break;
 			default:
 				break;
@@ -59,25 +59,25 @@ void StandardKeyboardHandler(uint_8 scanCode, uint_8 chr) {
 	}
 }
 
-void KeyboardHandler0xe0(uint_8 scanCode) {
-	switch (scanCode) {
+void keyboard_handler_0xe0(uint8_t scan_code) {
+	switch (scan_code) {
 		case 0x50: // Down Arrow
-			SetCursorPosition(CursorPosition + VGA_WIDTH);
+			set_cursor_position(cursor_position + VGA_WIDTH);
 			break;
 		case 0x48: // Up Arrow
-			SetCursorPosition(CursorPosition - VGA_WIDTH);
+			set_cursor_position(cursor_position - VGA_WIDTH);
 			break;
 		case 0x4d: // Right Arrow
-			SetCursorPosition(++CursorPosition);
+			set_cursor_position(++cursor_position);
 			break;
 		case 0x4b: // Left Arrow
-			SetCursorPosition(--CursorPosition);
+			set_cursor_position(--cursor_position);
 			break;
 		case 0x1d: // Right Ctrl
-			PrintString("[rCTRL]");
+			print_string("[rCTRL]");
 			break;
 		case 0x38: // Right Alt
-			PrintString("[rATL]");
+			print_string("[rATL]");
 			break;
 		default:
 			break;
@@ -85,14 +85,14 @@ void KeyboardHandler0xe0(uint_8 scanCode) {
 
 }
 
-void KeyboardHandler(uint_8 scanCode, uint_8 chr) {
-	switch (LastScanCode) {
+void keyboard_handler(uint8_t scan_code, uint8_t chr) {
+	switch (last_scan_code) {
 		case 0xe0:
-			KeyboardHandler0xe0(scanCode);
+			keyboard_handler_0xe0(scan_code);
 			break;
 		default:
-			StandardKeyboardHandler(scanCode, chr);
+			standard_keyboard_handler(scan_code, chr);
 			break;
 	}
-	LastScanCode = scanCode;
+	last_scan_code = scan_code;
 }

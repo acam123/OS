@@ -16,6 +16,10 @@ INPUT
 	inc/PageAllocator.o
 	inc/PageTable.o
 	inc/Heap.o
+	inc/Mouse.o
+	inc/PCI.o
+	inc/PIT.o
+	inc/Serial.o
 )
 
 OUTPUT
@@ -27,7 +31,7 @@ SECTIONS
 {
 	. = 0x8000;
 
-	_Kernel_Start = .;
+	_kernel_start = .;
 
 	.text : ALIGN(0x1000)
 	{
@@ -60,6 +64,6 @@ SECTIONS
 		*(.bss)
 	}
 
-	_Kernel_End = .;
+	_kernel_end = .;
 
 }

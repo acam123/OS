@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _IO_
+#define _IO_
 
 #include "Typedefs.h"
 
@@ -11,6 +12,15 @@
 #define ICW1_ICW4 0x01
 #define ICW4_8086 0x01
 
-void outb (unsigned short port, unsigned char val);
-unsigned char inb (unsigned short port);
-void RemapPIC();
+void outb (uint16_t port, uint8_t val);
+uint8_t inb (uint16_t port);
+
+
+void outl (uint16_t port, uint32_t val);
+uint32_t inl (uint16_t port); 
+
+void io_wait();
+
+void remap_pic();
+
+#endif

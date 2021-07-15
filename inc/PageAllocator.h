@@ -1,28 +1,32 @@
-#pragma once
+#ifndef _PAGE_ALLOCATOR_ 
+#define _PAGE_ALLOCATOR_ 
+
+
 #include "Typedefs.h"
 #include "MemoryMap.h"
 #include "Bitmap.h"
 
-void initAlloc();
+void init_page_alloc();
 
-void freePage (uint_64 addr);
-void freePages (uint_64 addr, uint_64 numPages);
+void free_page (uint64_t addr);
+void free_pages (uint64_t addr, uint64_t num_pages);
 
-void lockPage (uint_64 addr);
-void lockPages (uint_64 addr, uint_64 numPages);
+void lock_page (uint64_t addr);
+void lock_pages (uint64_t addr, uint64_t num_pages);
 
-void unReservePage (uint_64 addr);
+void unreserve_page (uint64_t addr);
 
-void reservePage (uint_64 addr);
-void reservePages (uint_64 addr, uint_64 numPages);
+void reserve_page (uint64_t addr);
+void reserve_pages (uint64_t addr, uint64_t num_pages);
 
-void printMemoryAllocation();
+void print_memory_allocation();
 
-void LockBitmap(); 
+void lock_bitmap(); 
 
-uint_64 pageAlign(uint_64 addr);
+uint64_t page_align(uint64_t addr);
 
-void initFreeMemory() ;
+void init_free_memory() ;
 
-void* requestPage();
+void* request_page();
 
+#endif

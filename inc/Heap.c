@@ -1,139 +1,139 @@
 #include "Heap.h"
 
-FreeNode* FreeHead;
-uint_64 HeapStart = 0x100000000000;
-uint_64 HeapSize;
+free_node* free_head;
+uint64_t heap_start = 0x100000000000;
+uint64_t heap_size;
 
-FreeNode* InitHeap(/*uint_64 heapStart, uint_64 heapLen*/) {
-	MapMemory(HeapStart, (uint_64)requestPage(), (PageTable*)0x1000 );
-	FreeNode* HeapHead = (FreeNode*) HeapStart;//requestPage();
-	HeapSize = PAGE_SIZE;
-	HeapHead->sz = HeapSize - sizeof(FreeNode);
-	HeapHead->next = (FreeNode*)0x0;
-	FreeHead = (FreeNode*) HeapHead;
-	return HeapHead;
+free_node* init_heap(/*uint64_t heapStart, uint64_t heapLen*/) {
+	map_memory(heap_start, (uint64_t)request_page(), (page_table*)0x1000 );
+	free_node* heap_head = (free_node*) heap_start;//request_page();
+	heap_size = PAGE_SIZE;
+	heap_head->sz = heap_size - sizeof(free_node);
+	heap_head->next = (free_node*)0x0;
+	free_head = (free_node*) heap_head;
+	return heap_head;
 }
 
-void* malloc (uint_64 sz) {
-	void* NewMemPtr = (void*) 0x0;
+void* malloc (uint64_t sz) {
+	void* new_mem_ptr = (void*) 0x0;
 
 	// Minimum size malloc returns must be large enough to be freed
-	if ( sz + sizeof(MemSegHeader) < sizeof(FreeNode) ) {
-		sz = sizeof(FreeNode) - sizeof(MemSegHeader);
+	if ( sz + sizeof(mem_seg_header) < sizeof(free_node) ) {
+		sz = sizeof(free_node) - sizeof(mem_seg_header);
 	}
 
-	FreeNode* thisNode = FreeHead;
+	free_node* this_node = free_head;
 	// Iterate through the freelist for a large enough segment
-	while ( (uint_64)thisNode != 0x0 ) {
+	while ( (uint64_t)this_node != 0x0 ) {
 		// Found suitable block
-		if ( thisNode->sz > (sz + sizeof(MemSegHeader)) ) {
-			// Duplicate FreeNode and update size
-			FreeNode* NewFreeNode = (FreeNode*) (((uint_64)thisNode) + sizeof(MemSegHeader) + sz);
-			NewFreeNode->sz = thisNode->sz - sz - sizeof(MemSegHeader);
-			NewFreeNode->next = thisNode->next;
+		if ( this_node->sz > (sz + sizeof(mem_seg_header)) ) {
+			// Duplicate free_node and update size
+			free_node* new_free_node = (free_node*) (((uint64_t)this_node) + sizeof(mem_seg_header) + sz);
+			new_free_node->sz = this_node->sz - sz - sizeof(mem_seg_header);
+			new_free_node->next = this_node->next;
 
 			// Cast Old Free Node to New Memory Segment Header and fill in
-			memset(0, (uint_64*)thisNode, sizeof(FreeNode));
-			MemSegHeader* NewMemHeader = (MemSegHeader*) thisNode;
-			NewMemHeader->sz = sz;
-			NewMemHeader->magic = MAGIC_NUM;
+			memset(0, (uint64_t*)this_node, sizeof(free_node));
+			mem_seg_header* new_mem_header = (mem_seg_header*) this_node;
+			new_mem_header->sz = sz;
+			new_mem_header->magic = MAGIC_NUM;
 
 			// Return pointer to the start of the New Memory Segment (after the header)
-			NewMemPtr = (void*) ( ((uint_64) NewMemHeader) + sizeof(MemSegHeader) ); 
+			new_mem_ptr = (void*) ( ((uint64_t) new_mem_header) + sizeof(mem_seg_header) ); 
 			
-			// Update the Global FreeHead pointer
-			if (thisNode = FreeHead) {
-				FreeHead = NewFreeNode;
+			// Update the Global free_head pointer
+			if (this_node = free_head) {
+				free_head = new_free_node;
 			}
 
 			break;
 		}
-		thisNode = thisNode->next;
+		this_node = this_node->next;
 	} 
 
 	// Large enough segment not found
-	if ( (uint_64)NewMemPtr == 0x0 ) {
+	if ( (uint64_t)new_mem_ptr == 0x0 ) {
 		// get more page(s)
-		uint_64 remainder = (sz + sizeof(MemSegHeader) + sizeof(FreeNode)) % 4096;
-		uint_64 numPages = (sz + sizeof(MemSegHeader) + sizeof(FreeNode)) / 4096;
+		uint64_t remainder = (sz + sizeof(mem_seg_header) + sizeof(free_node)) % 4096;
+		uint64_t num_pages = (sz + sizeof(mem_seg_header) + sizeof(free_node)) / 4096;
 		if (remainder > 0) {
-			numPages++;
+			num_pages++;
 		}
 
-		for (uint_64 i=0; i<numPages; i++) {
-			MapMemory(HeapStart + HeapSize + i*PAGE_SIZE, (uint_64)requestPage(), (PageTable*)0x1000);
+		for (uint64_t i=0; i<num_pages; i++) {
+			map_memory(heap_start + heap_size + i*PAGE_SIZE, (uint64_t)request_page(), (page_table*)0x1000);
 		}
 
 		// Fill in Memory Segment Header
-		MemSegHeader* NewMemHeader = (MemSegHeader*) (HeapStart + HeapSize);
-		NewMemHeader->sz = sz;
-		NewMemHeader->magic = MAGIC_NUM;
+		mem_seg_header* new_mem_header = (mem_seg_header*) (heap_start + heap_size);
+		new_mem_header->sz = sz;
+		new_mem_header->magic = MAGIC_NUM;
 
 		// Return pointer to the start of the New Memory Segment (after the header)
-		NewMemPtr = (void*) (HeapStart + HeapSize + sizeof(MemSegHeader));
+		new_mem_ptr = (void*) (heap_start + heap_size + sizeof(mem_seg_header));
 
-		FreeNode* NewFreeNode = (FreeNode*) ( (uint_64)NewMemPtr + sz);
-		NewFreeNode->sz = PAGE_SIZE - (uint_64)NewFreeNode - sizeof(FreeNode); //???
-		NewFreeNode->next = FreeHead;
-		FreeHead = NewFreeNode;
+		free_node* new_free_node = (free_node*) ( (uint64_t)new_mem_ptr + sz);
+		new_free_node->sz = PAGE_SIZE - (uint64_t)new_free_node - sizeof(free_node); //???
+		new_free_node->next = free_head;
+		free_head = new_free_node;
 
-		HeapSize += numPages*PAGE_SIZE;
+		heap_size += num_pages*PAGE_SIZE;
 	}
-	return NewMemPtr;
+	return new_mem_ptr;
 }
 
 void free (void* addr) {
-	MemSegHeader* memHeader = (MemSegHeader*) ((uint_64)addr - sizeof(MemSegHeader));
-	uint_64 sz = memHeader->sz;
-	if (memHeader->magic == MAGIC_NUM) {
-		memset(0, (uint_64*) memHeader, sz + sizeof(MemSegHeader));
-		FreeNode* newFreeNode = (FreeNode*) memHeader;
-		newFreeNode->sz = sz + sizeof(MemSegHeader) - sizeof(FreeNode);
+	mem_seg_header* mem_header = (mem_seg_header*) ((uint64_t)addr - sizeof(mem_seg_header));
+	uint64_t sz = mem_header->sz;
+	if (mem_header->magic == MAGIC_NUM) {
+		memset(0, (uint64_t*) mem_header, sz + sizeof(mem_seg_header));
+		free_node* newfree_node = (free_node*) mem_header;
+		newfree_node->sz = sz + sizeof(mem_seg_header) - sizeof(free_node);
 
-		newFreeNode->next = FreeHead; 
-		FreeHead = newFreeNode; 
+		newfree_node->next = free_head; 
+		free_head = newfree_node; 
 
 	}
 	return;
 }
 
-void printFreeList() {
-	PrintString("\n\rHEAD: ");
-	PrintString(HexToStr((uint_64)FreeHead));
+void print_free_list() {
+	print_string("\n\rHEAD: ");
+	print_string(hex_to_str((uint64_t)free_head));
 
-	FreeNode* thisNode = FreeHead;
+	free_node* thisNode = free_head;
 	// Iterate through the freelist 
-	while ( (uint_64)thisNode != 0x0 ) {
-		PrintString("\n\rFree Node: ");
-		PrintString(HexToStr((uint_64)thisNode));
-		PrintString("\n\r - sz: ");
-		PrintString(HexToStr(thisNode->sz));
-		PrintString("\n\r - next: ");
-		PrintString(HexToStr((uint_64)thisNode->next));
+	while ( (uint64_t)thisNode != 0x0 ) {
+		print_string("\n\rFree Node: ");
+		print_string(hex_to_str((uint64_t)thisNode));
+		print_string("\n\r - sz: ");
+		print_string(hex_to_str(thisNode->sz));
+		print_string("\n\r - next: ");
+		print_string(hex_to_str((uint64_t)thisNode->next));
 		thisNode = thisNode->next;
 	}
 	return;
 }
 
-uint_8 coalesce(FreeNode* node) {
-	uint_8 out = 0;
-	if ( (uint_64)node->next == (uint_64)node + node->sz + sizeof(FreeNode) ) {
-			node->sz += node->next->sz + sizeof(FreeNode);
-			FreeNode* tmpPtr = node->next;
+uint8_t coalesce(free_node* node) {
+	uint8_t out = 0;
+	if ( (uint64_t)node->next == (uint64_t)node + node->sz + sizeof(free_node) ) {
+			node->sz += node->next->sz + sizeof(free_node);
+			free_node* tmpPtr = node->next;
 			node->next = node->next->next;
-			memset(0, (uint_64*) tmpPtr, sizeof(FreeNode));
+			memset(0, (uint64_t*) tmpPtr, sizeof(free_node));
 			out = 1;
 	}
 	return out;
 }
 
-FreeNode* splitList(FreeNode* list, FreeNode** l, FreeNode** r) {
-	FreeNode* mid = list;
-	FreeNode* tail = list;
+free_node* split_list(free_node* list, free_node** l, free_node** r) {
+	free_node* mid = list;
+	free_node* tail = list;
 
-	while((uint_64)tail->next != 0x0) {
+	while((uint64_t)tail->next != 0x0) {
 		tail = tail->next;
-		if ((uint_64)tail->next != 0x0) {
+		if ((uint64_t)tail->next != 0x0) {
 			tail = tail->next;
 			mid = mid->next;
 		}
@@ -141,19 +141,19 @@ FreeNode* splitList(FreeNode* list, FreeNode** l, FreeNode** r) {
 
 	*l = list;
 	*r = mid->next;
-	mid->next = (FreeNode*)0x0;
+	mid->next = (free_node*)0x0;
 	return *r; 
 }
 
-FreeNode* merge(FreeNode* l, FreeNode* r) {
-	FreeNode* out;
-	if ( (uint_64)l == 0x0 ) {
+free_node* merge(free_node* l, free_node* r) {
+	free_node* out;
+	if ( (uint64_t)l == 0x0 ) {
 		out = r;
 	}
-	else if ( (uint_64)r == 0x0) {
+	else if ( (uint64_t)r == 0x0) {
 		out = l;
 	}
-	else if ( (uint_64) r < (uint_64) l ) {
+	else if ( (uint64_t) r < (uint64_t) l ) {
 		out = r;
 		out->next = merge(l, r->next);
 	} 
@@ -165,33 +165,33 @@ FreeNode* merge(FreeNode* l, FreeNode* r) {
 
 }
 
-FreeNode* mergeSort(FreeNode** nodePtr) {
-	if ( (uint_64)(*nodePtr) == 0x0 || (uint_64)(*nodePtr)->next == 0x0 )
+free_node* merge_sort(free_node** nodePtr) {
+	if ( (uint64_t)(*nodePtr) == 0x0 || (uint64_t)(*nodePtr)->next == 0x0 )
 	{
 		return *nodePtr;
 	}
 
-	FreeNode* l;
-	FreeNode* r;
-	splitList(*nodePtr, &l, &r);
+	free_node* l;
+	free_node* r;
+	split_list(*nodePtr, &l, &r);
 
-	mergeSort(&l);
-	mergeSort(&r);
+	merge_sort(&l);
+	merge_sort(&r);
 	*nodePtr = merge(l,r);
 	return *nodePtr;
 
 }
 
-void sortFreeList() {
-	mergeSort(&FreeHead);
+void sort_free_list() {
+	merge_sort(&free_head);
 }
 
-void coalesceAll () {
-	sortFreeList();
+void coalesce_all () {
+	sort_free_list();
 
-	FreeNode* thisNode = FreeHead;
-	while ( (uint_64) thisNode != 0x0) {
-		uint_8 ret = coalesce(thisNode);
+	free_node* thisNode = free_head;
+	while ( (uint64_t) thisNode != 0x0) {
+		uint8_t ret = coalesce(thisNode);
 		if (ret == 0) {
 			thisNode = thisNode->next;
 		}
@@ -199,14 +199,14 @@ void coalesceAll () {
 	return;
 } 
 
-void printList(FreeNode* list) {
-	while ((uint_64)list != 0x0) {
-		PrintString("\n\rNode: ");
-		PrintString(HexToStr((uint_64)list));
-		PrintString("\n\r - sz: ");
-		PrintString(HexToStr(list->sz));
-		PrintString("\n\r - next: ");
-		PrintString(HexToStr((uint_64)list->next));
+void print_list(free_node* list) {
+	while ((uint64_t)list != 0x0) {
+		print_string("\n\rNode: ");
+		print_string(hex_to_str((uint64_t)list));
+		print_string("\n\r - sz: ");
+		print_string(hex_to_str(list->sz));
+		print_string("\n\r - next: ");
+		print_string(hex_to_str((uint64_t)list->next));
 		list = list->next;
 	}
 }

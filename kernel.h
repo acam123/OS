@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _KERNEL_
+#define _KERNEL_
 
 #include "inc/Typedefs.h"
 #include "inc/TextPrint.h"
@@ -10,5 +11,11 @@
 #include "inc/PageAllocator.h"
 #include "inc/PageTable.h"
 #include "inc/Heap.h"
+#include "inc/Mouse.h"
+#include "inc/PCI.h"
+#include "inc/PIT.h"
+#include "inc/Serial.h"
 
 void _start();
+
+#endif

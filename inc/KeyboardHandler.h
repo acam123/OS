@@ -1,15 +1,18 @@
-#pragma once
+#ifndef _KEYBOARD_HANDLER_
+#define _KEYBOARD_HANDLER_
 
 #include "Typedefs.h"
 #include "KeyboardScanCodeSet.h"
 #include "TextPrint.h"
 
 
-extern uint_8 LeftShiftOn;
-extern uint_8 RightShiftOn;
-extern uint_8 CapsLockOn;
-extern uint_8 LastScanCode;
+extern uint8_t left_shift_on;
+extern uint8_t right_shift_on;
+extern uint8_t caps_lock_on;
+extern uint8_t last_scan_code;
 
-void StandardKeyboardHandler(uint_8 scanCode, uint_8 chr);
-void KeyboardHandler0xe0(uint_8 scanCode);
-void KeyboardHandler(uint_8 scanCode, uint_8 chr);
+void standard_keyboard_handler(uint8_t scan_code, uint8_t chr);
+void keyboard_handler_0xe0(uint8_t scan_code);
+void keyboard_handler(uint8_t scan_code, uint8_t chr);
+
+#endif

@@ -2,7 +2,7 @@
 [bits 16]
 
 mov bx, ExtendedString
-call PrintString
+call print_string
 
 jmp EnterProtectedMode
 
@@ -10,10 +10,12 @@ jmp EnterProtectedMode
 %include "inc/PrintString.asm"
 %include "inc/Gdt.asm"
 %include "inc/DetectMemory.asm"
+%include "inc/DetectPCI.asm"
 
 
 
 EnterProtectedMode:
+	call DetectPCI
 	call DetectMemory
 	call EnableA20
 	cli ;;disable interrupts
@@ -57,9 +59,11 @@ StartProtectedMode:
 [extern _start]
 %include "inc/IDT.asm"
 %include "inc/LoadBins.asm"
+%include "inc/SupportSSE.asm"
 
 Start64BitMode:
 
+	call ActivateSSE
 	call _start
 
 	jmp $

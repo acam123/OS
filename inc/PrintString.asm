@@ -1,4 +1,4 @@
-PrintString:
+print_string:
         mov ah, 0x0e
         mov al, 10;; new line
         int 0x10

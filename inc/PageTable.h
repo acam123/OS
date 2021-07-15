@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef _PAGE_TABLE_ 
+#define _PAGE_TABLE_ 
 
 #include "Typedefs.h"
 #include "MemoryMap.h"
@@ -7,37 +8,38 @@
 #include "TextPrint.h"
 
 // are these bitfields safe???
-typedef struct pageTableEntry {
-	uint_8 Present :1;
-	uint_8 ReadWrite :1;
-	uint_8 UserSuper :1;
-	uint_8 WriteThrough :1;
-	uint_8 CacheDisabled :1;
-	uint_8 Accessed :1;
-	uint_8 ignore0 :1;
-	uint_8 LargerPages :1;
-	uint_8 ignore1 :1;
-	uint_8 Available :3;
+typedef struct page_table_entry {
+	uint8_t present :1;
+	uint8_t read_write :1;
+	uint8_t user_super :1;
+	uint8_t write_through :1;
+	uint8_t cache_disabled :1;
+	uint8_t accessed :1;
+	uint8_t ignore0 :1;
+	uint8_t larger_pages :1;
+	uint8_t ignore1 :1;
+	uint8_t available :3;
 	// address is actually 40 bits
-	uint_64 Address :52;
-} PageTableEntry;
+	uint64_t address :52;
+} page_table_entry;
 
-typedef struct pageTable {
-	PageTableEntry entries[512];
-}__attribute__((aligned(PAGE_SIZE))) PageTable;
+typedef struct page_table {
+	page_table_entry entries[512];
+}__attribute__((aligned(PAGE_SIZE))) page_table;
 
-typedef struct pageMapIndex {
-	uint_64	PDP_i;
-	uint_64	PD_i;
-	uint_64	PT_i;
-	uint_64	P_i;
-	uint_16 Offset;
-} PageMapIndex;
+typedef struct page_map_index {
+	uint64_t	pdp_i;
+	uint64_t	pd_i;
+	uint64_t	pt_i;
+	uint64_t	p_i;
+	uint16_t offset;
+} page_map_index;
 
-void CalcPageMapIndex (uint_64 virtAddr, PageMapIndex* PageIndex);
-void* MapMemoryRec (uint_64 virtAddr, PageTable* Table); // 
-void MapMemory (uint_64 virtAddr, uint_64 physAddr, PageTable* PML_4);
-PageTable* PageTableCrawl (uint_64 index, PageTable* Table );
-void printPageTableEntry(PageTableEntry PTE);
-void extendIdentityMap();
+void calc_page_map_index (uint64_t virt_addr, page_map_index* page_index);
+void* map_memory_rec (uint64_t virt_addr, page_table* table); // 
+void map_memory (uint64_t virt_addr, uint64_t phys_addr, page_table* pml_4);
+page_table* page_table_crawl (uint64_t index, page_table* table );
+void print_page_table_entry(page_table_entry pte);
+void extend_identity_map();
 
+#endif

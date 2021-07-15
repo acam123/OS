@@ -1,7 +1,7 @@
-MemoryMapStart:
+memory_map_start:
 	dq 05000h
-	GLOBAL MemoryMapStart
+	GLOBAL memory_map_start
 
-PML4:
+pml4:
 	dq 01000h
-	GLOBAL PML4
+	GLOBAL pml4

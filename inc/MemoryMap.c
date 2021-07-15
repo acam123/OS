@@ -1,73 +1,73 @@
 #include "MemoryMap.h"
 
 
-extern uint_64 MemoryMapStart;
+extern uint64_t memory_map_start;
 
-//extern uint_8 UsableMemoryRegionCount;
-//extern MemoryMapEntry* UsableMemoryRegions[10];
+//extern uint8_t Usablememory_region_count;
+//extern memory_map_entry* UsableMemoryRegions[10];
 
 
-void PrintMemoryMap( MemoryMapEntry* memMap ) {
-	PrintString("\n\rMemory Base: "); 
-	PrintString(HexToStr(memMap->BaseAddress));
-	PrintString("\n\rRegion Length: "); 
-	PrintString(HexToStr(memMap->RegionLength));
-	PrintString("\n\rMemory Type: "); 
-	PrintString(IntToStr(memMap->RegionType));
-	PrintString("\n\rMemory Attributes: ");
-	PrintString(HexToStr(memMap->ExtendedAttributes));
-	PrintString("\n\r");
+void print_memory_map( memory_map_entry* mem_map ) {
+	print_string("\n\rMemory Base: "); 
+	print_string(hex_to_str(mem_map->base_address));
+	print_string("\n\rRegion Length: "); 
+	print_string(hex_to_str(mem_map->region_length));
+	print_string("\n\rMemory Type: "); 
+	print_string(int_to_str(mem_map->region_type));
+	print_string("\n\rMemory Attributes: ");
+	print_string(hex_to_str(mem_map->extended_attributes));
+	print_string("\n\r");
 }
 
-void PrintMemoryMaps() {
-	MemoryMapEntry* memMap = (MemoryMapEntry*) MemoryMapStart; // Base of 1st memory map entry defined in DetectMemory.asm
-	for (uint_8 i=0; i<MemoryRegionCount; i++) {
-		PrintMemoryMap(memMap + i);
+void print_memory_maps() {
+	memory_map_entry* mem_map = (memory_map_entry*) memory_map_start; // Base of 1st memory map entry defined in DetectMemory.asm
+	for (uint8_t i=0; i<memory_region_count; i++) {
+		print_memory_map(mem_map + i);
 	}
 }
 
-void PrintUsableMemoryMaps() {
-	MemoryMapEntry* memMapStart = (MemoryMapEntry*) MemoryMapStart; // Base of 1st memory map entry defined in DetectMemory.asm
-	for (uint_8 i=0; i<MemoryRegionCount; i++) {
-		MemoryMapEntry* memMap = (MemoryMapEntry*)memMapStart+i;
-		if (memMap->RegionType == 1) {
-			PrintMemoryMap(memMap);
+void print_usable_memory_maps() {
+	memory_map_entry* mem_map_start = (memory_map_entry*) memory_map_start; // Base of 1st memory map entry defined in DetectMemory.asm
+	for (uint8_t i=0; i<memory_region_count; i++) {
+		memory_map_entry* mem_map = (memory_map_entry*)mem_map_start+i;
+		if (mem_map->region_type == 1) {
+			print_memory_map(mem_map);
 		}
 	}
 }
 
-uint_32 GetUsableMemoryRegionCount() {
-	uint_32 count = 0;
-	MemoryMapEntry* memMapStart = (MemoryMapEntry*) MemoryMapStart; // Base of 1st memory map entry defined in DetectMemory.asm
-	for (uint_8 i=0; i<MemoryRegionCount; i++) {
-		MemoryMapEntry* memMap = (MemoryMapEntry*)memMapStart+i;
-		if (memMap->RegionType == 1) {
+uint32_t get_usable_memory_region_count() {
+	uint32_t count = 0;
+	memory_map_entry* mem_map_start = (memory_map_entry*) memory_map_start; // Base of 1st memory map entry defined in DetectMemory.asm
+	for (uint8_t i=0; i<memory_region_count; i++) {
+		memory_map_entry* mem_map = (memory_map_entry*)mem_map_start+i;
+		if (mem_map->region_type == 1) {
 			count++;
 		}
 	}
 	return count;
 }
 
-MemoryMapEntry* GetLargestUsableMemoryEntry() {
-	MemoryMapEntry* largestMap = 0x0;
-	uint_64 tmpMapSize = 0;
-	MemoryMapEntry* memMapStart = (MemoryMapEntry*) MemoryMapStart;
-	for (uint_8 i=0; i<MemoryRegionCount; i++) {
-		MemoryMapEntry* memMap = (MemoryMapEntry*)memMapStart+i;
-		if ( (memMap->RegionType == 1) && (memMap->RegionLength > tmpMapSize) ) {
-			largestMap = memMap;
-			tmpMapSize = memMap->RegionLength;
+memory_map_entry* get_largest_usable_memory_entry() {
+	memory_map_entry* largestMap = 0x0;
+	uint64_t tmp_map_size = 0;
+	memory_map_entry* mem_map_start = (memory_map_entry*) memory_map_start;
+	for (uint8_t i=0; i<memory_region_count; i++) {
+		memory_map_entry* mem_map = (memory_map_entry*)mem_map_start+i;
+		if ( (mem_map->region_type == 1) && (mem_map->region_length > tmp_map_size) ) {
+			largestMap = mem_map;
+			tmp_map_size = mem_map->region_length;
 		}
 	}
 	return largestMap;
 }
 
-uint_64 GetSystemMemorySize() {
-	uint_64 sz = 0;
-	MemoryMapEntry* memMapStart = (MemoryMapEntry*) MemoryMapStart;
-	for (uint_8 i=0; i<MemoryRegionCount; i++) {
-		MemoryMapEntry* memMap = (MemoryMapEntry*)memMapStart+i;
-		sz += memMap->RegionLength;
+uint64_t get_system_memory_size() {
+	uint64_t sz = 0;
+	memory_map_entry* mem_map_start = (memory_map_entry*) memory_map_start;
+	for (uint8_t i=0; i<memory_region_count; i++) {
+		memory_map_entry* mem_map = (memory_map_entry*)mem_map_start+i;
+		sz += mem_map->region_length;
 	}
 	//!!! NOTE: MemoryMap doesn't include 0xa0000-0xf0000 so manually including !!!
 	sz += 0xf0000 - 0xa0000;
@@ -75,32 +75,32 @@ uint_64 GetSystemMemorySize() {
 }
 
 // for Page Alloc
-void ReserveSystemMemory() {
+void reserve_system_memory() {
 	// Base of 1st memory map entry defined in DetectMemory.asm
-	MemoryMapEntry* memMapStart = (MemoryMapEntry*) MemoryMapStart; 
-	for (uint_8 i=0; i<MemoryRegionCount; i++) {
-		MemoryMapEntry* memMap = (MemoryMapEntry*)memMapStart+i;
+	memory_map_entry* mem_map_start = (memory_map_entry*) memory_map_start; 
+	for (uint8_t i=0; i<memory_region_count; i++) {
+		memory_map_entry* mem_map = (memory_map_entry*)mem_map_start+i;
 
-		if (memMap->RegionType != 1) {
-			uint_64 bufferedAddr = pageAlign(memMap->BaseAddress + 1) - PAGE_SIZE;
-			uint_64 bufferedNumPages = pageAlign(memMap->RegionLength) / PAGE_SIZE;
-			reservePages( bufferedAddr, bufferedNumPages);
+		if (mem_map->region_type != 1) {
+			uint64_t buffered_addr = page_align(mem_map->base_address + 1) - PAGE_SIZE;
+			uint64_t buffered_num_pages = page_align(mem_map->region_length) / PAGE_SIZE;
+			reserve_pages( buffered_addr, buffered_num_pages);
 		}
 	}
 
 	//!!! NOTE: MemoryMap doesn't include 0xa0000-0xf0000 so manually including !!!
-	uint_64 base = 0xa0000;
-	uint_64 length = 0xf0000 - 0xa0000;
-	uint_64 bufferedAddr = pageAlign(base + 1) - PAGE_SIZE;
-	uint_64 bufferedNumPages = pageAlign(length) / PAGE_SIZE;
-	reservePages( bufferedAddr, bufferedNumPages);
+	uint64_t base = 0xa0000;
+	uint64_t length = 0xf0000 - 0xa0000;
+	uint64_t buffered_addr = page_align(base + 1) - PAGE_SIZE;
+	uint64_t buffered_num_pages = page_align(length) / PAGE_SIZE;
+	reserve_pages( buffered_addr, buffered_num_pages);
 
 	// Reserve low Free Memory Block for Kernel 
 	// Maybe this should be locked instead and just from Kernel_Start to Kernel_End
-	MemoryMapEntry* memMap = (MemoryMapEntry*) MemoryMapStart; 
-	bufferedAddr = pageAlign(memMap->BaseAddress + 1) - PAGE_SIZE;
-	bufferedNumPages = pageAlign(memMap->RegionLength) / PAGE_SIZE;
-	reservePages( bufferedAddr, bufferedNumPages);
+	memory_map_entry* mem_map = (memory_map_entry*) memory_map_start; 
+	buffered_addr = page_align(mem_map->base_address + 1) - PAGE_SIZE;
+	buffered_num_pages = page_align(mem_map->region_length) / PAGE_SIZE;
+	reserve_pages( buffered_addr, buffered_num_pages);
 
 	return;
 }

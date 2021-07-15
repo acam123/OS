@@ -1,14 +1,14 @@
 
 ;;MemoryRegionEntries equ 0x5000 ;; arbitrarily chosen
 
-MemoryRegionCount:
+memory_region_count:
 	db 0
-	GLOBAL MemoryRegionCount
+	GLOBAL memory_region_count
 
 DetectMemory:
 	mov ax, 0
 	mov es, ax
-	mov di, [MemoryMapStart] ;;MemoryRegionEntries
+	mov di, [memory_map_start] ;;MemoryRegionEntries
 	mov edx, 0x534D4150 ;;mem_map magic word
 	xor ebx, ebx
 
@@ -21,7 +21,7 @@ DetectMemory:
 		je .finished
 
 		add di, 24
-		inc byte [MemoryRegionCount]
+		inc byte [memory_region_count]
 		jmp .repeat
 
 	.finished:

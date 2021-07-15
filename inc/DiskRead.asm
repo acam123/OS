@@ -17,12 +17,12 @@ ReadDisk:
 
 	.DiskReadPassed:
 		mov bx, DiskReadSuccessString
-		call PrintString
+		call print_string
 		jmp .Return
 
 	.DiskReadFailed:
 		mov bx, DiskReadErrorString
-		call PrintString
+		call print_string
 		jmp .Return
 
 	.Return:
