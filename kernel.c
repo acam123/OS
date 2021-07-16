@@ -27,7 +27,7 @@ void _start() {
 	init_page_alloc();
 	extend_identity_map();
 	init_heap();
-	//init_pci();
+	init_pci();
 	init_pit();
 	init_serial();
 

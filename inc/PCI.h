@@ -194,6 +194,10 @@ typedef struct _pci_header_type_2 {
 void		init_pci				();
 
 void		brute_force_devs		();
+void 		check_pci				();
+void 		check_bus				(uint8_t bus);
+void 		check_device 			(uint8_t bus, uint8_t dev, uint8_t func);
+void 		check_function			(uint8_t bus, uint8_t dev, uint8_t func);
 
 uint16_t 	get_vendor_id			(uint8_t bus, uint8_t dev, uint8_t func);
 uint16_t 	get_device_id			(uint8_t bus, uint8_t dev, uint8_t func);
@@ -202,7 +206,7 @@ uint16_t	get_status				(uint8_t bus, uint8_t dev, uint8_t func);
 uint16_t	get_command				(uint8_t bus, uint8_t dev, uint8_t func);
 
 uint8_t		get_class_code 			(uint8_t bus, uint8_t dev, uint8_t func);
-uint8_t 	get_subclass_code		(uint8_t bus, uint8_t dev, uint8_t func);
+uint8_t 	get_subclass			(uint8_t bus, uint8_t dev, uint8_t func);
 uint8_t 	get_prog_if				(uint8_t bus, uint8_t dev, uint8_t func);
 uint8_t 	get_revision_id			(uint8_t bus, uint8_t dev, uint8_t func);
 
@@ -236,6 +240,8 @@ uint8_t 	get_max_latency 		(uint8_t bus, uint8_t dev, uint8_t func);
 uint8_t 	get_min_grant 			(uint8_t bus, uint8_t dev, uint8_t func);
 uint8_t 	get_interrupt_pin 		(uint8_t bus, uint8_t dev, uint8_t func);
 uint8_t 	get_interrupt_line 		(uint8_t bus, uint8_t dev, uint8_t func);
+
+uint8_t 	get_secondary_bus_num	(uint8_t bus, uint8_t dev, uint8_t func);
 
 uint32_t	query_pci				(uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg);
 

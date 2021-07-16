@@ -4,12 +4,14 @@
 void init_pci() {
 	if ( pci_check == PCI_MAGIC) {
 		//print_string("PCI Magic Found!!!");
+		//check_pci();
+		brute_force_devs();
 	}
 	else {
 		//print_string("NO PCI");
 	}
 
-	brute_force_devs();
+	
 
 }
 
@@ -59,7 +61,6 @@ void brute_force_devs() {
 							header_type = get_header_type(bus, dev, i);
 							print_string("; ");
 							print_string(hex_to_str(header_type));
-
 						}
 
 					}
@@ -78,10 +79,11 @@ void brute_force_devs() {
 
 					if(device_id == 0x24cd) {
 						uint8_t class_code = get_class_code(bus, dev, 0);
-						uint8_t subclass = get_subclass_code(bus, dev, 0);
+						uint8_t subclass = get_subclass(bus, dev, 0);
 						uint8_t prog_if = get_prog_if(bus, dev, 0);
 						uint16_t subsys_vendor_id = get_subsys_vendor_id(bus, dev, 0);
 						uint16_t subsys_id = get_subsys_id(bus, dev, 0);
+						uint32_t bar_0 = get_bar_0(bus, dev, 0);
 
 						print_string(" :: ");
 						print_string(hex_to_str(class_code));
@@ -93,15 +95,60 @@ void brute_force_devs() {
 						print_string(hex_to_str(subsys_vendor_id));
 						print_string(", ");
 						print_string(hex_to_str(subsys_id));
-
-
+						print_string(" -> ");
+						print_string(hex_to_str(bar_0));
 					}
-
-
 				}
 			}
 		}
 	}
+}
+
+void check_function (uint8_t bus, uint8_t dev, uint8_t func) {
+	uint8_t class_code = get_class_code(bus, dev, func);
+	uint8_t subclass = get_subclass(bus, dev, func);
+	/*
+	print_string("\n\rBus:");
+	print_string(hex_to_str(bus));
+	print_string(", Dev:");
+	print_string(hex_to_str(dev));
+	print_string(", Func:");
+	print_string(hex_to_str(func));
+	*/
+	// check for PCI-to-PCI Bridge
+	if( (class_code == 0x06) && (subclass == 0x04 | subclass == 0x09) ) {
+		uint8_t secondary_bus_num = get_secondary_bus_num(bus, dev, func);
+		check_bus(secondary_bus_num);
+	}
+}
+
+void check_device (uint8_t bus, uint8_t dev, uint8_t func) {
+	uint16_t vendor_id = get_vendor_id(bus, dev, func);
+	if (vendor_id == 0xffff) { 
+		return;
+	}
+	else {
+		check_function(bus, dev, func);
+     	uint8_t header_type = get_header_type(bus, dev, func);
+		if ( (header_type & 0x80) != 0) {	
+			// Device is multifunction
+			for(func = 1; func < 8; func++) {
+				if (get_vendor_id(bus, dev, func) != 0xffff) {
+					check_function(bus, dev, func);
+				}
+			}
+		}
+	}
+}
+
+void check_bus(uint8_t bus) {
+	for (uint8_t dev = 0; dev < 32; dev++) {
+		check_device(bus, dev, 0);
+	}
+}
+
+void check_pci () {
+	check_bus(0);
 }
 
 uint16_t get_device_id(uint8_t bus, uint8_t dev, uint8_t func) {
@@ -135,7 +182,7 @@ uint8_t get_class_code(uint8_t bus, uint8_t dev, uint8_t func) {
 	return (uint8_t)ret;
 }
 
-uint8_t get_subclass_code(uint8_t bus, uint8_t dev, uint8_t func) {
+uint8_t get_subclass(uint8_t bus, uint8_t dev, uint8_t func) {
 	uint32_t ret = query_pci (bus, dev, func, 2);
 	ret = (ret & 0x00ff0000) >> 16;
 	return (uint8_t)ret;
@@ -259,7 +306,11 @@ uint8_t get_interrupt_line(uint8_t bus, uint8_t dev, uint8_t func) {
 	return (uint8_t)ret;
 }
 
-
+uint8_t get_secondary_bus_num(uint8_t bus, uint8_t dev, uint8_t func) {
+	uint32_t ret = query_pci (bus, dev, func, 0x06);
+	ret = (ret & 0x0000ff00) >> 8;
+	return (uint8_t)ret;
+}
 
 uint32_t query_pci (uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg) {
 	pci_dev_t pci;
@@ -275,26 +326,3 @@ uint32_t query_pci (uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg) {
 	uint32_t ret = inl(PCI_CONFIG_DATA);
 	return ret;
 }
-/*
-
- void checkDevice(uint8_t bus, uint8_t device) {
-     uint8_t function = 0;
- 
-     vendor_id = get_vendor_id(bus, device, function);
-     if(vendor_id == 0xFFFF) return;        // Device doesn't exist
-     checkFunction(bus, device, function);
-     header_type = get_header_type(bus, device, function);
-     if( (header_type & 0x80) != 0) {
-         // It is a multi-function device, so check remaining functions 
-         for(function = 1; function < 8; function++) {
-             if(get_vendor_id(bus, device, function) != 0xFFFF) {
-                 checkFunction(bus, device, function);
-             }
-         }
-     }
- }
-
-
-
-
-*/
