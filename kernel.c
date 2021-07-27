@@ -30,19 +30,15 @@ void _start() {
 	init_pci();
 	init_pit();
 	init_serial();
-
-
+	init_ahci();
 
 
 
 
 
 	
-	
-	
 
-
-	
-
-	while(1); //return
+	while(1) {
+		asm("hlt"); // hlt when nothing to do
+	}
 }

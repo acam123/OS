@@ -3,7 +3,7 @@ EXTENDED_SPACE equ 0x8000;; 512 Bytes After Bootloader???
 ReadDisk:
 	mov ah, 0x02;; set BIOS to read disk 
 	mov bx, EXTENDED_SPACE
-	mov al, 64;; how many sectors
+	mov al, 128;; how many sectors
 	mov dl, [BOOT_DISK];; disk to read from
 	mov ch, 0x00;; cylinder to read from
 	mov dh, 0x00;; head to read from
@@ -18,14 +18,14 @@ ReadDisk:
 	.DiskReadPassed:
 		mov bx, DiskReadSuccessString
 		call print_string
-		jmp .Return
+		jmp .ReadReturn
 
 	.DiskReadFailed:
 		mov bx, DiskReadErrorString
 		call print_string
-		jmp .Return
+		jmp .ReadReturn
 
-	.Return:
+	.ReadReturn:
 		ret
 
 BOOT_DISK:

@@ -15,6 +15,8 @@
 #include "inc/PCI.h"
 #include "inc/PIT.h"
 #include "inc/Serial.h"
+#include "inc/PCIClassCodes.h"
+#include "inc/AHCI.h"
 
 void _start();
 

@@ -4,7 +4,7 @@ ENTRY (_start)
 
 INPUT
 (
-	extended.o
+	boot.o
 	kernel.o
 	inc/IDT.o
 	inc/IO.o
@@ -20,6 +20,8 @@ INPUT
 	inc/PCI.o
 	inc/PIT.o
 	inc/Serial.o
+	inc/PCIClassCodes.o
+	inc/AHCI.o
 )
 
 OUTPUT

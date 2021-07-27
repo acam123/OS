@@ -1,120 +1,48 @@
 #include "PCI.h"
 
+uint32_t ahci_base_addr = 0x0;
 
 void init_pci() {
 	if ( pci_check == PCI_MAGIC) {
 		//print_string("PCI Magic Found!!!");
-		//check_pci();
-		brute_force_devs();
+		check_pci();
 	}
 	else {
 		//print_string("NO PCI");
 	}
 
-	
-
-}
-
-
-void brute_force_devs() {
-	uint16_t bus;
-	uint8_t dev;
-
-	uint16_t vendor_id;
-	uint8_t header_type;
-
-	for(bus = 0; bus < 256; bus++) {
-		for(dev = 0; dev < 32; dev++) {
-			vendor_id = get_vendor_id(bus, dev, 0);
-			if (vendor_id != 0xffff) {
-				header_type = get_header_type(bus, dev, 0);
-				print_string("\n\rBus:");
-				print_string(int_to_str(bus));
-				print_string("\n\rDevice:");
-				print_string(int_to_str(dev));
-				print_string("\n\rHeader:");
-				print_string(hex_to_str(header_type));
-				// check for multi function
-				if ( (header_type & 0x80) != 0) {
-					uint16_t device_id;
-					print_string("\n\r-- func_0: ");
-					print_string(hex_to_str(vendor_id));
-					device_id = get_device_id(bus, dev, 0);
-					print_string(" -> ");
-					print_string(hex_to_str(device_id));
-
-					header_type = get_header_type(bus, dev, 0);
-					print_string("; ");
-					print_string(hex_to_str(header_type));
-
-					for (uint8_t i = 1; i < 8; i++ ) {
-						vendor_id = get_vendor_id(bus, dev, i);
-						print_string("\n\r-- func_");
-						print_string(int_to_str(i));
-						print_string(": ");
-						print_string(hex_to_str(vendor_id));
-						if (vendor_id != 0xffff) {
-							device_id = get_device_id(bus, dev, i);
-							print_string(" -> ");
-							print_string(hex_to_str(device_id));
-
-							header_type = get_header_type(bus, dev, i);
-							print_string("; ");
-							print_string(hex_to_str(header_type));
-						}
-
-					}
-				}
-				else {
-					uint16_t device_id;
-					print_string("\n\r-- func_0: ");
-					print_string(hex_to_str(vendor_id));
-					device_id = get_device_id(bus, dev, 0);
-					print_string(" -> ");
-					print_string(hex_to_str(device_id));
-
-					header_type = get_header_type(bus, dev, 0);
-					print_string("; ");
-					print_string(hex_to_str(header_type));
-
-					if(device_id == 0x24cd) {
-						uint8_t class_code = get_class_code(bus, dev, 0);
-						uint8_t subclass = get_subclass(bus, dev, 0);
-						uint8_t prog_if = get_prog_if(bus, dev, 0);
-						uint16_t subsys_vendor_id = get_subsys_vendor_id(bus, dev, 0);
-						uint16_t subsys_id = get_subsys_id(bus, dev, 0);
-						uint32_t bar_0 = get_bar_0(bus, dev, 0);
-
-						print_string(" :: ");
-						print_string(hex_to_str(class_code));
-						print_string(", ");
-						print_string(hex_to_str(subclass));
-						print_string(", ");
-						print_string(hex_to_str(prog_if));
-						print_string(", ");
-						print_string(hex_to_str(subsys_vendor_id));
-						print_string(", ");
-						print_string(hex_to_str(subsys_id));
-						print_string(" -> ");
-						print_string(hex_to_str(bar_0));
-					}
-				}
-			}
-		}
-	}
 }
 
 void check_function (uint8_t bus, uint8_t dev, uint8_t func) {
 	uint8_t class_code = get_class_code(bus, dev, func);
 	uint8_t subclass = get_subclass(bus, dev, func);
-	/*
-	print_string("\n\rBus:");
-	print_string(hex_to_str(bus));
-	print_string(", Dev:");
+	
+	print_string("\n\r");
+	print_string("\n\rDev:");
 	print_string(hex_to_str(dev));
-	print_string(", Func:");
+	print_string(" -> Func:");
 	print_string(hex_to_str(func));
-	*/
+
+	print_string("\n\r -");
+	print_string(lookup_class_code(class_code));
+	print_string(" :: ");
+	print_string(lookup_subclass(class_code, subclass));
+	print_string("\n\r -");
+
+	uint16_t vendor_id = get_vendor_id(bus,dev,func);
+	print_string(lookup_vendor_id(vendor_id));
+	print_string(" :: ");
+	uint16_t device_id = get_device_id(bus,dev,func);
+	print_string(lookup_device_id(vendor_id, device_id));
+	print_string(" :: ");
+	uint8_t prog_if = get_prog_if(bus, dev, func);
+	print_string(lookup_prog_if(class_code, subclass, prog_if));
+
+	// Initiate AHCI Driver
+	if ( class_code == 0x01 && subclass == 0x06 && prog_if == 0x01 ) {
+		ahci_base_addr = get_bar_5(bus, dev, func);
+	}
+	
 	// check for PCI-to-PCI Bridge
 	if( (class_code == 0x06) && (subclass == 0x04 | subclass == 0x09) ) {
 		uint8_t secondary_bus_num = get_secondary_bus_num(bus, dev, func);

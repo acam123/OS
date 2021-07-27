@@ -4,6 +4,8 @@
 #include "Typedefs.h"
 #include "TextPrint.h"
 #include "IO.h"
+#include "PCIClassCodes.h"
+#include "AHCI.h"
 
 #define PCI_MAGIC 				0x20494350
 #define PCI_CONFIG_ADDRESS  	0xCF8
@@ -131,7 +133,6 @@ typedef struct _pci_header_type_1 {
 	uint8_t interrupt_line;
 	uint8_t interrupt_pin;
 	uint16_t bridge_control;
-
 } pci_header_type_1;
 
 typedef struct _pci_header_type_2 {
@@ -186,14 +187,10 @@ typedef struct _pci_header_type_2 {
 	uint16_t subsys_vendor_id;
 
 	uint32_t pc_card_legacy_mode_base;
-
 } pci_header_type_2;
-
-
 
 void		init_pci				();
 
-void		brute_force_devs		();
 void 		check_pci				();
 void 		check_bus				(uint8_t bus);
 void 		check_device 			(uint8_t bus, uint8_t dev, uint8_t func);

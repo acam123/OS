@@ -72,6 +72,6 @@ Start64BitMode:
 ExtendedString:
 	db '...This is Extended Space...',0
 
-times 2048-($-$$) db 0
+;;times 524288-($-$$) db 0 ;; Make file large enough to match maxed out partition size in partition table
 
 
