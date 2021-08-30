@@ -78,8 +78,8 @@ void init_idt() {
 	//Keyboard, Mouse, & PIT Mask
 	//outb(0x21, 0xf8); 
 	//outb(0xa1, 0xef);
-	outb(0x21, 0b11111000);
-	outb(0xa1, 0b11101111);
+	out_8(0x21, 0b11111000);
+	out_8(0xa1, 0b11101111);
 
 
 
@@ -93,13 +93,13 @@ void init_idt() {
 
 extern void isr0_handler() {
 	tick();
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+	out_8(0x20, 0x20);
+	out_8(0xa0, 0x20);
 }
 
 void(*main_keyboard_handler)(uint8_t scan_code, uint8_t chr);
 extern void isr1_handler() {
-	uint8_t scan_code = inb(0x60);
+	uint8_t scan_code = in_8(0x60);
 	uint8_t chr = 0;
 
 	if (scan_code < 0x3a) { chr = scan_code_lookup_table[scan_code]; }
@@ -107,18 +107,18 @@ extern void isr1_handler() {
 
 	//print_string(hex_to_str(inb(0x60), sizeof(inb(0x60))));
 
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+	out_8(0x20, 0x20);
+	out_8(0xa0, 0x20);
 }
 
 extern void isr12_handler() {
 
-	uint8_t mouse_data = inb(0x60);
+	uint8_t mouse_data = in_8(0x60);
 
 	print_string("...Mouse...");
 
-	outb(0xa0, 0x20);
-	outb(0x20, 0x20);
+	out_8(0xa0, 0x20);
+	out_8(0x20, 0x20);
 	
 }
 
@@ -126,8 +126,8 @@ extern void isr14_handler() {
 
 	print_string("...PAGE FAULT...");
 
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+	out_8(0x20, 0x20);
+	out_8(0xa0, 0x20);
 
 	while(1);
 }

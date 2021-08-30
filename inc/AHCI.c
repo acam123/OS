@@ -1,43 +1,47 @@
 #include "AHCI.h"
 
-hba_port_tracker port_tracker[32];
-uint16_t port_tracker_count; 
+hba_port_tracker_t hba_port_tracker[32];
+uint8_t hba_port_tracker_count; 
 
 void init_ahci() {
-	// ahci_base_addr set in PCI.c
+	// this should be a list of ahci endpoints instead
+	uint32_t ahci_base_addr = get_bar_5(ahci_endpoints[0].bus, ahci_endpoints[0].dev, ahci_endpoints[0].func);
 	map_memory(ahci_base_addr, ahci_base_addr, (page_table*) 0x1000);
-	port_tracker_count = 0;
-	probe_ports();
+	hba_port_tracker_count = 0;
+	
+	probe_ports(ahci_base_addr);
 	
 	
-	configure_port(port_tracker[0].hba_port_ptr);
+	configure_port(hba_port_tracker[0].hba_port_ptr);
 	
 	
 	uint8_t* buffer = (uint8_t*) request_page();
 	memset(0, (uint64_t*)buffer, 0x1000);
 
-	uint8_t res = disk_read(0, 4, (void*)buffer, port_tracker[0].hba_port_ptr);  //hba_port* hba_port_ptr
+	uint8_t res = disk_read(0, 4, (void*)buffer, hba_port_tracker[0].hba_port_ptr);  //hba_port* hba_port_ptr
 	
 	/*
 	print_string("\n\rTRACKER =>");
 	print_string(" type:");
-	print_string(hex_to_str(port_tracker[0].port_type));
+	print_string(hex_to_str(hba_port_tracker[0].port_type));
 	print_string(" :: addr:");
-	print_string(hex_to_str((uint64_t)port_tracker[0].hba_port_ptr));
+	print_string(hex_to_str((uint64_t)hba_port_tracker[0].hba_port_ptr));
 	print_string(" :: count:");
-	print_string(hex_to_str((uint64_t)port_tracker[0].port_num));
+	print_string(hex_to_str((uint64_t)hba_port_tracker[0].port_num));
 	*/
 	
+	/*
 	print_string("\n\rRead Result:");
 	print_string(hex_to_str(res));
 	for (int t=0; t<1024; t++) {
 		print_char(buffer[t]); //buffer[t]);	
 		//print_string(hex_to_str(buffer[t]));	
 	}
+	*/
 
 }
 
-void probe_ports() {
+void probe_ports(uint32_t ahci_base_addr) {
 	hba_memory* hba_memory_ptr = (hba_memory*)(uint64_t)ahci_base_addr;
 	// ports_implemented is a preset bitmap of the 32 ports
 	uint32_t ports_implemented = hba_memory_ptr->ports_implemented;
@@ -46,19 +50,23 @@ void probe_ports() {
 			hba_port* hba_port_ptr = (hba_port*)&(hba_memory_ptr->ports[i]);
 			ahci_port_type port_type = get_port_type(hba_port_ptr);
 			if (port_type == sata || port_type == satapi ) {
-				port_tracker[port_tracker_count].port_type = port_type; 
-				port_tracker[port_tracker_count].hba_port_ptr = hba_port_ptr;
-				port_tracker[port_tracker_count].port_num = port_tracker_count;
+				hba_port_tracker[hba_port_tracker_count].port_type = port_type; 
+				hba_port_tracker[hba_port_tracker_count].hba_port_ptr = hba_port_ptr;
+				hba_port_tracker[hba_port_tracker_count].port_num = hba_port_tracker_count;
 				
-				print_string("\n\r--- Ports ---");
-				print_string("\n\rType:");
+				print_string("\n\r");
+				print_string("--- Ports ---");
+				print_string("\n\r");
+				print_string("Type:");
 				print_string(hex_to_str(port_type));
-				print_string("\n\rCount:");
-				print_string(hex_to_str(port_tracker_count));
-				print_string("\n\rAddr:");
+				print_string("\n\r");
+				print_string("Count:");
+				print_string(hex_to_str(hba_port_tracker_count));
+				print_string("\n\r");
+				print_string("Addr:");
 				print_string(hex_to_str((uint64_t)hba_port_ptr));
 
-				port_tracker_count++;
+				hba_port_tracker_count++;
 			}
 		}
 	}

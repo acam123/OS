@@ -12,9 +12,9 @@ void set_divisor(uint16_t pit_divisor) {
 	if (pit_divisor < 100) {
 		pit_divisor = 100;
 	}
-	outb( PIT_CHANNEL_0_DATA_PORT, (uint8_t)(pit_divisor & 0x00ff) );
+	out_8( PIT_CHANNEL_0_DATA_PORT, (uint8_t)(pit_divisor & 0x00ff) );
 	io_wait();
-	outb( PIT_CHANNEL_0_DATA_PORT, (uint8_t)((pit_divisor & 0xff00) >> 8) );
+	out_8( PIT_CHANNEL_0_DATA_PORT, (uint8_t)((pit_divisor & 0xff00) >> 8) );
 }
 
 uint64_t get_frequency() {

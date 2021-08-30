@@ -79,10 +79,10 @@ void set_cursor_position (sint16_t new_position) {
 
 
 	// Send position to screen
-	outb(REG_SCREEN_CTRL, 0x0f); // cursor offset low byte
-	outb(REG_SCREEN_DATA, (uint8_t)(new_position & 0xff));
-	outb(REG_SCREEN_CTRL, 0x0e); // cursor offset high byte
-	outb(REG_SCREEN_DATA, (uint8_t)((new_position >> 8) & 0xff));
+	out_8(REG_SCREEN_CTRL, 0x0f); // cursor offset low byte
+	out_8(REG_SCREEN_DATA, (uint8_t)(new_position & 0xff));
+	out_8(REG_SCREEN_CTRL, 0x0e); // cursor offset high byte
+	out_8(REG_SCREEN_DATA, (uint8_t)((new_position >> 8) & 0xff));
 
 	//Update global position variable
 	cursor_position = (uint16_t) new_position;
@@ -119,10 +119,10 @@ void set_cursor_position_old(sint16_t position) {
 	}
 
 	// Send position to screen
-	outb(REG_SCREEN_CTRL, 0x0f); // cursor offset low byte
-	outb(REG_SCREEN_DATA, (uint8_t)(position & 0xff));
-	outb(REG_SCREEN_CTRL, 0x0e); // cursor offset high byte
-	outb(REG_SCREEN_DATA, (uint8_t)((position >> 8) & 0xff));
+	out_8(REG_SCREEN_CTRL, 0x0f); // cursor offset low byte
+	out_8(REG_SCREEN_DATA, (uint8_t)(position & 0xff));
+	out_8(REG_SCREEN_CTRL, 0x0e); // cursor offset high byte
+	out_8(REG_SCREEN_DATA, (uint8_t)((position >> 8) & 0xff));
 
 	//Update global position variable
 	cursor_position = (uint16_t) position;

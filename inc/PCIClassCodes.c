@@ -486,6 +486,14 @@ char* lookup_device_id_8086 (uint16_t device_id) {
             return "440FX - 82441FX PMC [Natoma]";
         case 0x2918:
             return "82801IB (ICH9) LPC Interface Controller";
+        case 0x2934:
+            return "82801I (ICH9 Family) USB UHCI Controller #1";
+        case 0x2935:
+            return "82801I (ICH9 Family) USB UHCI Controller #2";
+        case 0x2936:
+            return "82801I (ICH9 Family) USB UHCI Controller #3";
+        case 0x293a:
+            return "82801I (ICH9 Family) USB2 EHCI Controller #1";
         case 0x29c0:
             return "82G33/G31/P35/P31 Express DRAM Controller";
         case 0x2922:

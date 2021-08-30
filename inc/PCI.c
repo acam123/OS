@@ -1,11 +1,18 @@
 #include "PCI.h"
 
-uint32_t ahci_base_addr = 0x0;
+pci_meta ahci_endpoints[10];
+pci_meta uhci_endpoints[10];
+uint8_t ahci_count = 0;
+uint8_t uhci_count = 0;
 
 void init_pci() {
 	if ( pci_check == PCI_MAGIC) {
 		//print_string("PCI Magic Found!!!");
 		check_pci();
+		print_string("\n\rAHCI_COUNT:");
+		print_string(hex_to_str(ahci_count));
+		print_string("\n\rUHCI_COUNT:");
+		print_string(hex_to_str(uhci_count));
 	}
 	else {
 		//print_string("NO PCI");
@@ -40,7 +47,20 @@ void check_function (uint8_t bus, uint8_t dev, uint8_t func) {
 
 	// Initiate AHCI Driver
 	if ( class_code == 0x01 && subclass == 0x06 && prog_if == 0x01 ) {
-		ahci_base_addr = get_bar_5(bus, dev, func);
+		ahci_endpoints[ahci_count].bus = bus;
+		ahci_endpoints[ahci_count].dev = dev;
+		ahci_endpoints[ahci_count].func = func; 
+		ahci_endpoints[ahci_count].present = 1;
+		ahci_count++;
+	}
+
+	// Initiate UHCI Driver
+	if ( class_code == 0xc && subclass == 0x3 && prog_if == 0x0 ) {
+		uhci_endpoints[uhci_count].bus = bus;
+		uhci_endpoints[uhci_count].dev = dev;
+		uhci_endpoints[uhci_count].func = func;
+		uhci_endpoints[uhci_count].present = 1;
+		uhci_count++;
 	}
 	
 	// check for PCI-to-PCI Bridge
@@ -80,167 +100,167 @@ void check_pci () {
 }
 
 uint16_t get_device_id(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0);
+	uint32_t ret = pci_read (bus, dev, func, 0);
 	ret = (ret & 0xffff0000) >> 16;
 	return (uint16_t)ret;
 }
 
 uint16_t get_vendor_id(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0);
+	uint32_t ret = pci_read (bus, dev, func, 0);
 	ret &= 0x0000ffff;
 	return (uint16_t)ret;
 }
 
 uint16_t get_status(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 1);
+	uint32_t ret = pci_read (bus, dev, func, 1);
 	ret = (ret & 0xffff0000) >> 16;
 	return (uint16_t)ret;
 }
 
 uint16_t get_command (uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 1);
+	uint32_t ret = pci_read (bus, dev, func, 1);
 	ret &= 0x0000ffff;
 	return (uint16_t)ret;
 }
 
 
 uint8_t get_class_code(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 2);
+	uint32_t ret = pci_read (bus, dev, func, 2);
 	ret = (ret & 0xff000000) >> 24;
 	return (uint8_t)ret;
 }
 
 uint8_t get_subclass(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 2);
+	uint32_t ret = pci_read (bus, dev, func, 2);
 	ret = (ret & 0x00ff0000) >> 16;
 	return (uint8_t)ret;
 }
 
 uint8_t get_prog_if(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 2);
+	uint32_t ret = pci_read (bus, dev, func, 2);
 	ret = (ret & 0x0000ff00) >> 8;
 	return (uint8_t)ret;
 }
 
 uint8_t get_revision_id(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 2);
+	uint32_t ret = pci_read (bus, dev, func, 2);
 	ret &= 0x000000ff;
 	return (uint8_t)ret;
 }
 
 uint8_t get_bist(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 3);
+	uint32_t ret = pci_read (bus, dev, func, 3);
 	ret = (ret & 0xff000000) >> 24;
 	return (uint8_t)ret;
 }
 
 uint8_t get_header_type(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 3);
+	uint32_t ret = pci_read (bus, dev, func, 3);
 	ret = (ret & 0x00ff0000) >> 16;
 	return (uint8_t)ret;
 }
 
 uint8_t get_latency_timer(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 3);
+	uint32_t ret = pci_read (bus, dev, func, 3);
 	ret = (ret & 0x0000ff00) >> 8;
 	return (uint8_t)ret;
 }
 
 uint8_t get_cache_line_sz(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 3);
+	uint32_t ret = pci_read (bus, dev, func, 3);
 	ret &= 0x000000ff;
 	return (uint8_t)ret;
 }
 
 uint32_t get_bar_0(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 4);
+	uint32_t ret = pci_read (bus, dev, func, 4);
 	return ret;
 }
 
 uint32_t get_bar_1(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 5);
+	uint32_t ret = pci_read (bus, dev, func, 5);
 	return ret;
 }
 
 uint32_t get_bar_2(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 6);
+	uint32_t ret = pci_read (bus, dev, func, 6);
 	return ret;
 }
 
 uint32_t get_bar_3(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 7);
+	uint32_t ret = pci_read (bus, dev, func, 7);
 	return ret;
 }
 
 uint32_t get_bar_4(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 8);
+	uint32_t ret = pci_read (bus, dev, func, 8);
 	return ret;
 }
 
 uint32_t get_bar_5(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 9);
+	uint32_t ret = pci_read (bus, dev, func, 9);
 	return ret;
 }
 
 uint32_t get_cardbus_cis_ptr(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xa);
+	uint32_t ret = pci_read (bus, dev, func, 0xa);
 	return ret;
 }
 
 uint16_t get_subsys_id(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xb);
+	uint32_t ret = pci_read (bus, dev, func, 0xb);
 	ret = (ret & 0xffff0000) >> 16;
 	return (uint16_t)ret;
 }
 
 uint16_t get_subsys_vendor_id(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xb);
+	uint32_t ret = pci_read (bus, dev, func, 0xb);
 	ret &= 0x0000ffff;
 	return (uint16_t)ret;
 }
 
 uint32_t get_expansion_rom_addr(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xc);
+	uint32_t ret = pci_read (bus, dev, func, 0xc);
 	return ret;
 }
 
 uint8_t get_capabilities_ptr(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xd);
+	uint32_t ret = pci_read (bus, dev, func, 0xd);
 	ret &= 0x000000ff;
 	return (uint8_t)ret;
 }
 
 uint8_t get_max_latency(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xf);
+	uint32_t ret = pci_read (bus, dev, func, 0xf);
 	ret = (ret & 0xff000000) >> 24;
 	return (uint8_t)ret;
 }
 
 uint8_t get_min_grant(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xf);
+	uint32_t ret = pci_read (bus, dev, func, 0xf);
 	ret = (ret & 0x00ff0000) >> 16;
 	return (uint8_t)ret;
 }
 
 uint8_t get_interrupt_pin(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xf);
+	uint32_t ret = pci_read (bus, dev, func, 0xf);
 	ret = (ret & 0x0000ff00) >> 8;
 	return (uint8_t)ret;
 }
 
 uint8_t get_interrupt_line(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0xf);
+	uint32_t ret = pci_read (bus, dev, func, 0xf);
 	ret &= 0x000000ff;
 	return (uint8_t)ret;
 }
 
 uint8_t get_secondary_bus_num(uint8_t bus, uint8_t dev, uint8_t func) {
-	uint32_t ret = query_pci (bus, dev, func, 0x06);
+	uint32_t ret = pci_read (bus, dev, func, 0x06);
 	ret = (ret & 0x0000ff00) >> 8;
 	return (uint8_t)ret;
 }
 
-uint32_t query_pci (uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg) {
+uint32_t pci_read (uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg) {
 	pci_dev_t pci;
 	pci.query.dev_num = dev;
 	pci.query.bus_num = bus;
@@ -250,7 +270,22 @@ uint32_t query_pci (uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg) {
 	pci.query.always_zero = 0b00;
 	pci.query.reserved = 0b0000000;
 	pci.query.enable = 0b1; 
-	outl(PCI_CONFIG_ADDRESS, pci.bits);
-	uint32_t ret = inl(PCI_CONFIG_DATA);
+	out_32(PCI_CONFIG_ADDRESS, pci.bits);
+	uint32_t ret = in_32(PCI_CONFIG_DATA);
 	return ret;
+}
+
+void pci_write (uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg, uint32_t data) {
+	pci_dev_t pci;
+	pci.query.dev_num = dev;
+	pci.query.bus_num = bus;
+	pci.query.func_num = func;
+	pci.query.reg_num = reg;
+
+	pci.query.always_zero = 0b00;
+	pci.query.reserved = 0b0000000;
+	pci.query.enable = 0b1; 
+	out_32(PCI_CONFIG_ADDRESS, pci.bits);
+	out_32(PCI_CONFIG_DATA, data);
+	return;
 }

@@ -5,7 +5,6 @@
 #include "TextPrint.h"
 #include "MemoryMap.h"
 
-//#define BITMAP_SIZE 64
 #define PAGE_SIZE 4096
 
 extern uint64_t* ptr_bitmap;

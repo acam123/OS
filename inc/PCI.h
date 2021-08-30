@@ -5,7 +5,6 @@
 #include "TextPrint.h"
 #include "IO.h"
 #include "PCIClassCodes.h"
-#include "AHCI.h"
 
 #define PCI_MAGIC 				0x20494350
 #define PCI_CONFIG_ADDRESS  	0xCF8
@@ -16,6 +15,19 @@
 #define PCI_CONFIG_REG_BYTES	256
 
 extern uint32_t pci_check;
+
+// PCI endpoint structure for drivers to track 
+typedef struct _pci_meta {
+	uint32_t bus;
+	uint32_t dev;
+	uint32_t func;
+	uint8_t present;
+} pci_meta;
+
+#include "AHCI.h"
+#include "UHCI.h"
+
+//extern pci_meta ahci_endpoint;
 
 // PCI device query structure
 typedef struct _pci_dev_query {
@@ -240,7 +252,9 @@ uint8_t 	get_interrupt_line 		(uint8_t bus, uint8_t dev, uint8_t func);
 
 uint8_t 	get_secondary_bus_num	(uint8_t bus, uint8_t dev, uint8_t func);
 
-uint32_t	query_pci				(uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg);
+uint32_t	pci_read				(uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg);
+
+void 		pci_write				(uint8_t bus, uint8_t dev, uint8_t func, uint8_t reg, uint32_t data);
 
 
 #endif

@@ -1,11 +1,11 @@
 #include "Heap.h"
 
 free_node* free_head;
-uint64_t heap_start = 0x100000000000;
+uint64_t heap_start = 0x250000; //0x100000000000; // Should be in free memory after bitmap // needs to fit in 32 bits for uhci
 uint64_t heap_size;
 
 free_node* init_heap(/*uint64_t heapStart, uint64_t heapLen*/) {
-	map_memory(heap_start, (uint64_t)request_page(), (page_table*)0x1000 );
+	//map_memory(heap_start, (uint64_t)request_page(), (page_table*)0x1000 );
 	free_node* heap_head = (free_node*) heap_start;//request_page();
 	heap_size = PAGE_SIZE;
 	heap_head->sz = heap_size - sizeof(free_node);
@@ -179,7 +179,6 @@ free_node* merge_sort(free_node** nodePtr) {
 	merge_sort(&r);
 	*nodePtr = merge(l,r);
 	return *nodePtr;
-
 }
 
 void sort_free_list() {

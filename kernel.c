@@ -31,7 +31,8 @@ void _start() {
 	init_pit();
 	init_serial();
 	init_ahci();
-
+	//init_usb();
+	init_uhci(); 
 
 
 

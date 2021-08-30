@@ -25,7 +25,7 @@
 #define HBA_PxIS_TFES (1 << 30)
 #define LBA_MODE 1<<6
 
-extern uint32_t ahci_base_addr; 
+extern pci_meta ahci_endpoints[10];
 
 typedef enum _ahci_port_type {
 	none = 0,
@@ -82,7 +82,7 @@ typedef struct _hba_memory {
 	uint32_t bios_handoff_control_status;
 	uint8_t reserved_0[0x74];
 	uint8_t vendor_specific[0x60];
-	hba_port ports[1]; // atleast 2 ports, maybe up to 32
+	hba_port ports[1]; // atleast 2 ports, can be up to 32
 } hba_memory;
 
 typedef struct _hba_command_header {
@@ -105,12 +105,12 @@ typedef struct _hba_command_header {
 } hba_command_header;
 
 // AidanOS struct to store important info about hba_ports for easy access
-typedef struct _hba_port_tracker {
+typedef struct _hba_port_tracker_t {
 	hba_port* hba_port_ptr; 
 	ahci_port_type port_type;
 	uint8_t* buffer; 
 	uint8_t port_num;
-} hba_port_tracker;
+} hba_port_tracker_t;
 
 typedef struct _hba_prdt_entry {
     uint32_t data_base_addr_lower;
@@ -159,7 +159,7 @@ typedef struct _fis_reg_h2d {
 
 void init_ahci ();
 
-void probe_ports ();
+void probe_ports (uint32_t ahci_base_addr);
 
 ahci_port_type get_port_type (hba_port* port);
 

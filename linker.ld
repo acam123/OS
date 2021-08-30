@@ -22,6 +22,10 @@ INPUT
 	inc/Serial.o
 	inc/PCIClassCodes.o
 	inc/AHCI.o
+	inc/Process.o
+	inc/UHCI.o
+	inc/USB.o
+
 )
 
 OUTPUT

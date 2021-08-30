@@ -17,6 +17,10 @@
 #include "inc/Serial.h"
 #include "inc/PCIClassCodes.h"
 #include "inc/AHCI.h"
+#include "inc/Process.h"
+#include "inc/UHCI.h"
+#include "inc/USB.h"
+
 
 void _start();
 

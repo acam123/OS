@@ -12,12 +12,15 @@
 #define ICW1_ICW4 0x01
 #define ICW4_8086 0x01
 
-void outb (uint16_t port, uint8_t val);
-uint8_t inb (uint16_t port);
+void out_8 (uint16_t port, uint8_t val);
+uint8_t in_8 (uint16_t port);
+
+void out_16 (uint16_t port, uint16_t val);
+uint16_t in_16 (uint16_t port);
 
 
-void outl (uint16_t port, uint32_t val);
-uint32_t inl (uint16_t port); 
+void out_32 (uint16_t port, uint32_t val);
+uint32_t in_32 (uint16_t port); 
 
 void io_wait();
 
