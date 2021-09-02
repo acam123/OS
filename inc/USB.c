@@ -30,16 +30,8 @@ b_descriptor_types_defs b_descriptor_types = {
 	.INTERFACE_POWER = 8
 };
 
-b_descriptor_sizes_defs  b_descriptor_sizes = {
-	.DEVICE = 0x12, //18
-	.CONFIGURATION = 0x9, //9
-	//.STRING = ,
-	//.INTERFACE = ,
-	.ENDPOINT = 0x7, //7
-	.DEVICE_QUALIFIER = 0xa, //10
-	.OTHER_SPEED_CONFIG = 0x9 //9
-	//.INTERFACE_POWER = 
-};
+uint8_t b_descriptor_sizes[] = {0,0x12,0x9,0,0x9,0x7,0xa,0x9,0};
+
 
 usb_transfer_directions_defs usb_transfer_directions = {
 	.HOST_TO_DEVICE = 0, 
@@ -58,6 +50,27 @@ usb_recipients_defs usb_recipients = {
 	.INTERFACE = 1, 
 	.ENDPOINT = 2, 
 	.OTHER = 3
+};
+
+bm_desc_endpnt_attr_trasnfer_t_defs bm_desc_endpnt_attr_trasnfer_t = {
+	.CONTROL = 0b00,
+	.ISOCHRONOUS = 0b01,
+	.BULK = 0b10,
+	.INTERRUPT = 0b11
+};
+
+bm_desc_endpnt_attr_synch_t_defs bm_desc_endpnt_attr_synch_t = {
+	.NO_SYNCH = 0b00,
+	.ASYNCH = 0b01,
+	.ADAPTIVE = 0b10,
+	.SYNCH = 0b11
+};
+
+bm_desc_endpnt_attr_usage_t_defs bm_desc_endpnt_attr_usage_t = {
+	.DATA = 0b00,
+	.FEEDBACK = 0b01,
+	.IMPLICIT = 0b10,
+	.RESERVED = 0b11
 };
 
 

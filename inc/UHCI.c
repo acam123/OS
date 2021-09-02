@@ -1,5 +1,11 @@
 #include "UHCI.h"
 
+uhci_packet_t_defs uhci_packet_t = {
+	.SETUP = 0x2d,
+	.IN = 0x69,
+	.OUT = 0xe1
+};
+
 uhci_port_tracker_t uhci_port_tracker[16];
 uint8_t uhci_port_tracker_count; 
 
@@ -30,658 +36,164 @@ void init_uhci() {
 
 	uhci_devices_config(bar_4);
 
-	// NEED 32 BIT ADDRESSES & Alignment for TD & QH
+/*
+	- Get Device Descriptor (8_Byte_Request, 8_Byte_Packets, Device_0) -> Max_Packet_Size
+	- Get Device Descriptor (Descriptor_Size_Request, Max_Packet_Size, Device_0) -> Full Descriptor Info (String_Indexes for iMan, iProd, Serial No; # of Configurations)
+	- Set Address (0_Byte_Request, Max_Packet_Size, Device_0) 
+	- Get String Descriptor (8_Byte_Request, Max_Packet_Size, Device_1, String_Index_0, Lang_0) -> Languages Supported
+	- Get String Descriptor (8_Byte_Request, Max_Packet_Size, Device_1, String_Index_1, Lang_English) -> String Length
+	- Get String Descriptor (String_Length, Max_Packet_Size, Device_1, String_Index_1, Lang_English) -> String
+
+	- **Get Configuration (1_Byte_Request, Max_Packet_Size, Device_1 ) -> Default Config Number ???
+	- Get Configuration Descriptor (9 bytes) -> Config_Total_Length (of config & it's interface(s), endpoint(s), other class & vendor specific descriptor types); Config_String_Index
+	- Get Configuration Descriptor (Config_Total_Length & parse)
+	- Get String Descriptor (Config_String_Index) -> String_Length
+	- Get String Descriptor (Config_String_Index, String_Length) -> String
+	- **Set Configuration 
+*/	
+
+	/*
+	 * 8 bytes of Device Descriptor
+	 */
+	uint8_t max_packet_size = 0x08;
+
+	uint8_t low_speed = 0;
+	uint8_t device = 0;
+	uint8_t endpoint = 0;
+	uint8_t response_packet_sz = max_packet_size;
+	uint8_t response_num_bytes = 0x08;
+	uint8_t transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	uint8_t request_type = usb_request_types.STANDARD;
+	uint8_t recipient = usb_recipients.DEVICE;
+	uint8_t b_request = usb_standard_requests.GET_DESCRIPTOR;
+	uint16_t w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
+	uint16_t w_index = 0x0000;
+
+	uint32_t response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
 	
+	//max_packet_size = (((usb_descriptor_device*)response)->b_max_packet_size);
+
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #1");
+	print_string("\n\r");
+	print_string(hex_to_str(*(uint32_t*)response));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
 	
-	uhci_transfer_descriptor* td_0 = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uhci_transfer_descriptor* td_1 = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uhci_transfer_descriptor* td_2 = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uhci_transfer_descriptor* td_3 = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uhci_transfer_descriptor* td_4 = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uhci_transfer_descriptor* td_out = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uhci_transfer_descriptor* td_in = (uhci_transfer_descriptor*) malloc(sizeof(uhci_transfer_descriptor));
-	uint32_t* uhci_qh_ptr = (uint32_t*) malloc(16);
-
-	uint32_t uhci_request = (uint32_t) malloc(8);
-	uint32_t uhci_response = (uint32_t) malloc(0x22); 
+	/*
+	 * SET ADDRESS
+	 */
 	
-	
+	uint8_t device_address = 0x01;
 
+	low_speed = 0;
+	device = 0;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0;
+	transfer_direction = usb_transfer_directions.HOST_TO_DEVICE;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.SET_ADDRESS; 
+	w_value = device_address; // set as device 1
+	w_index = 0x0000;
 
-
-	// SETUP TD
-	td_0->next_descriptor = ((uint32_t)(uint64_t)td_1) | 0x4; // or on depth bit
-	td_0->status.low_speed = 0;
-	td_0->status.active = 1;
-	td_0->status.error_counter = 3; 
-	td_0->packet_header.packet_type = 0x2d;
-	td_0->packet_header.device = 0b0000000;
-	td_0->packet_header.endpoint = 0x0;
-	td_0->packet_header.data_toggle = 0b0;
-	td_0->packet_header.reserved = 0b0;
-	td_0->packet_header.maximum_length = 7;
-	td_0->buffer_addr = uhci_request;
-
-	// IN TD's
-	td_1->next_descriptor = ((uint32_t)(uint64_t)td_out) | 0x4;
-	td_1->status.low_speed = 0;
-	td_1->status.active = 1;
-	td_1->status.error_counter = 3; 
-	td_1->packet_header.packet_type = 0x69;	
-	td_1->packet_header.device = 0b0000000; // Now we talk to the device we set up as device 1
-	td_1->packet_header.endpoint = 0x0;
-	td_1->packet_header.data_toggle = 0b1;
-	td_1->packet_header.reserved = 0b0;
-	td_1->packet_header.maximum_length = 7;
-	td_1->buffer_addr = uhci_response;
-
-	//OUT TD
-	td_out->next_descriptor = 0x00000001;
-	td_out->status.low_speed = 0;
-	td_out->status.active = 1;
-	td_out->status.error_counter = 3;
-	td_out->packet_header.packet_type = 0xe1;	
-	td_out->packet_header.device = 0b0000000; // Now we talk to the device we set up as device 1
-	td_out->packet_header.endpoint = 0x0;
-	td_out->packet_header.data_toggle = 0b1;
-	td_out->packet_header.reserved = 0b0;
-	td_out->packet_header.maximum_length = 2047; //63 //2047
-	td_out->buffer_addr = 0x0;
-
-	// UHCI REQUEST
-	usb_device_request* get_descriptor = (usb_device_request*)(uint64_t)(uhci_request);
-	get_descriptor->request_type.transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	get_descriptor->request_type.request_type = usb_request_types.STANDARD;
-	get_descriptor->request_type.recipient = usb_recipients.DEVICE;
-	get_descriptor->b_request = usb_standard_requests.GET_DESCRIPTOR;
-	get_descriptor->w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
-	get_descriptor->w_index = 0x0000;
-	get_descriptor->w_length = (0x00 << 8) | 0x08; //b_descriptor_sizes.DEVICE;
-
-	// QH	
-	*uhci_qh_ptr = (uint32_t)(uint64_t)td_out;// horizontal pointer to terminate // (uint32_t)(uint64_t)td_out; //horizontal pointer to td_out??? // 0x00000001
-	*(uhci_qh_ptr+1) = (uint32_t)(uint64_t)td_0; // vertical pointer to td_0
-	*(uhci_qh_ptr+2) = 0x00000000;
-	*(uhci_qh_ptr+3) = 0x00000000;
-	
-	//sleep(50);
-
-	// Add new QH to frame list
-	*(uhci_frame_list_ptr) = ((uint32_t)(uint64_t)uhci_qh_ptr) | 0x2; // ptr to qh plus set as qh 
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
 	
 	print_string("\n\r");
-	print_string("Transfer Setup Completed");
+	print_string("RESPONSE #2");
+	print_string("\n\r");
+	print_string("ADDRESS SET!!!");
 
+	/*
+	 * Full Device Descriptor
+	 */
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = b_descriptor_sizes[b_descriptor_types.DEVICE];
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
+	w_index = 0x000;
 
-	uint32_t loops = 0;
-	while (1) {
-		if ( td_out->status.active == 0b0) {
-			// On Success
-			if ( (td_1->status.actual_length == 7)  ) {
-				// Clear Queue Head from Frame List
-				*uhci_frame_list_ptr = 0x1; 
-
-				print_string("\n\r");
-				print_string("Successful Transfer");
-			}
-			else {
-				print_string("\n\r");
-				print_string("Transfer Error");
-			}
-			break;
-		}
-		sleep(10);
-		loops++;
-		if (loops > 100) {
-			print_string("\n\r");
-			print_string("MAXED OUT!!!");
-			break;
-		}
-	}
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
 	
-	print_string("\n\r");
-	print_string("[QH]");
-	print_qh(uhci_qh_ptr);
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_0] ");
-	print_td((uint32_t*)td_0);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_1] ");
-	print_td((uint32_t*)td_1);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_out] ");
-	print_td((uint32_t*)td_out);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE");
-	print_string("\n\r");
-	print_string(hex_to_str(*(uint32_t*)uhci_response));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+1)));
-	
-	// SET ADDRESS
-	td_0->next_descriptor = ((uint32_t)(uint64_t)td_in) | 0x4; // or on depth bit
-	td_0->status.low_speed = 0;
-	td_0->status.active = 1;
-	td_0->status.error_counter = 3; 
-	td_0->packet_header.packet_type = 0x2d;
-	td_0->packet_header.device = 0b0000000;
-	td_0->packet_header.endpoint = 0x0;
-	td_0->packet_header.data_toggle = 0b0;
-	td_0->packet_header.reserved = 0b0;
-	td_0->packet_header.maximum_length = 7;
-	td_0->buffer_addr = uhci_request;
-
-	// IN TD
-	td_in->next_descriptor = 0x1; // last td in this transfer
-	td_in->status.low_speed = 0;
-	td_in->status.active = 1; 
-	td_in->status.error_counter = 3; 
-	td_in->packet_header.packet_type = 0x69;//td_1->packet_header = (uhci_descriptor_packet_header)0xFFE80069; 
-	td_in->packet_header.device = 0b0000000;
-	td_in->packet_header.endpoint = 0x0;
-	td_in->packet_header.data_toggle = 0b1;
-	td_in->packet_header.reserved = 0b0;
-	td_in->packet_header.maximum_length = 2047; // all 11 bits as 1's = 0 byte response
-	td_in->buffer_addr = uhci_response ; //0x0;
-
-	// UHCI REQUEST
-	get_descriptor->request_type.transfer_direction = usb_transfer_directions.HOST_TO_DEVICE;
-	get_descriptor->request_type.request_type = usb_request_types.STANDARD;
-	get_descriptor->request_type.recipient = usb_recipients.DEVICE;
-	get_descriptor->b_request = usb_standard_requests.SET_ADDRESS;
-	get_descriptor->w_value = 0x0001;
-	get_descriptor->w_index = 0x0000;
-	get_descriptor->w_length = (0x00 << 8) | 0x00; //b_descriptor_sizes.DEVICE;
-
-	//UHCI RESPONSE 
-	uint32_t* tmp_response = (uint32_t*)uhci_response;
-	*tmp_response = 0x00000000;
-	*(tmp_response+1) = 0x00000000;
-
-	// QH
-	*uhci_qh_ptr = (uint32_t)(uint64_t)td_in; //horizontal pointer to td_out 
-	*(uhci_qh_ptr+1) = (uint32_t)(uint64_t)td_0; // vertical pointer to td_0
-
-	// Add new QH to frame list
-	*(uhci_frame_list_ptr) = ((uint32_t)(uint64_t)uhci_qh_ptr) | 0x2; // ptr to qh plus set as qh 
-
-
-	print_string("\n\r");
-	print_string("Transfer Setup Completed");
-
-
-	loops = 0;
-	while (1) {
-		if ( td_in->status.active == 0b0) {
-			// On Success
-			if ( (td_0->status.actual_length == 7)  ) {
-				// Clear Queue Head from Frame List
-				*uhci_frame_list_ptr = 0x1; 
-
-				print_string("\n\r");
-				print_string("Successful Transfer");
-			}
-			else {
-				print_string("\n\r");
-				print_string("Transfer Error");
-			}
-			break;
-		}
-		sleep(10);
-		loops++;
-		if (loops > 100) {
-			print_string("\n\r");
-			print_string("MAXED OUT!!!");
-			break;
-		}
-	}
-
-
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[REQUEST] ");
-	print_string("@");
-	print_string(hex_to_str(get_descriptor));
-	print_string("\n\r");
-	uint32_t* tmp_request = (uint32_t*) get_descriptor;
-	print_string(hex_to_str(*(tmp_request)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(tmp_request+1)));
-	print_string("\n\r");
-	print_string("\n\r");
-
-	print_string("\n\r");
-	print_string("[QH]");
-	print_qh(uhci_qh_ptr);
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_0] ");
-	print_td((uint32_t*)td_0);
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_IN] ");
-	print_td((uint32_t*)td_in);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE");
-	print_string("\n\r");
-	print_string(hex_to_str(*(uint32_t*)uhci_response));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+1)));
-
-	// SETUP TD
-	td_0->next_descriptor = ((uint32_t)(uint64_t)td_1) | 0x4; // or on depth bit
-	td_0->status.low_speed = 0;
-	td_0->status.active = 1;
-	td_0->status.error_counter = 3; 
-	td_0->packet_header.packet_type = 0x2d;
-	td_0->packet_header.device = 0b0000001;
-	td_0->packet_header.endpoint = 0x0;
-	td_0->packet_header.data_toggle = 0b0;
-	td_0->packet_header.reserved = 0b0;
-	td_0->packet_header.maximum_length = 7;
-	td_0->buffer_addr = uhci_request;
-
-	// IN TD's
-	td_1->next_descriptor = ((uint32_t)(uint64_t)td_2) | 0x4;
-	td_1->status.low_speed = 0;
-	td_1->status.active = 1;
-	td_1->status.error_counter = 3; 
-	td_1->packet_header.packet_type = 0x69;	
-	td_1->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_1->packet_header.endpoint = 0x0;
-	td_1->packet_header.data_toggle = 0b1;
-	td_1->packet_header.reserved = 0b0;
-	td_1->packet_header.maximum_length = 7;
-	td_1->buffer_addr = uhci_response;
-
-		// IN TD's
-	td_2->next_descriptor = ((uint32_t)(uint64_t)td_3) | 0x4;
-	td_2->status.low_speed = 0;
-	td_2->status.active = 1;
-	td_2->status.error_counter = 3; 
-	td_2->packet_header.packet_type = 0x69;	
-	td_2->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_2->packet_header.endpoint = 0x0;
-	td_2->packet_header.data_toggle = 0b0;
-	td_2->packet_header.reserved = 0b0;
-	td_2->packet_header.maximum_length = 7;
-	td_2->buffer_addr = uhci_response+8;
-
-		// IN TD's
-	td_3->next_descriptor = ((uint32_t)(uint64_t)td_out) | 0x4;
-	td_3->status.low_speed = 0;
-	td_3->status.active = 1;
-	td_3->status.error_counter = 3; 
-	td_3->packet_header.packet_type = 0x69;	
-	td_3->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_3->packet_header.endpoint = 0x0;
-	td_3->packet_header.data_toggle = 0b1;
-	td_3->packet_header.reserved = 0b0;
-	td_3->packet_header.maximum_length = 7;
-	td_3->buffer_addr = uhci_response+16;
-
-	//OUT TD
-	td_out->next_descriptor = 0x00000001;
-	td_out->status.low_speed = 0;
-	td_out->status.active = 1;
-	td_out->status.error_counter = 3;
-	td_out->packet_header.packet_type = 0xe1;	
-	td_out->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_out->packet_header.endpoint = 0x0;
-	td_out->packet_header.data_toggle = 0b1;
-	td_out->packet_header.reserved = 0b0;
-	td_out->packet_header.maximum_length = 2047; //63 //2047
-	td_out->buffer_addr = 0x0;
-
-	// UHCI REQUEST
-	get_descriptor->request_type.transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	get_descriptor->request_type.request_type = usb_request_types.STANDARD;
-	get_descriptor->request_type.recipient = usb_recipients.DEVICE;
-	get_descriptor->b_request = usb_standard_requests.GET_DESCRIPTOR;
-	get_descriptor->w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
-	get_descriptor->w_index = 0x0000;
-	get_descriptor->w_length = (0x00 << 8) | b_descriptor_sizes.DEVICE;
-
-	// QH	
-	*uhci_qh_ptr = (uint32_t)(uint64_t)td_out;// horizontal pointer to terminate // (uint32_t)(uint64_t)td_out; //horizontal pointer to td_out??? // 0x00000001
-	*(uhci_qh_ptr+1) = (uint32_t)(uint64_t)td_0; // vertical pointer to td_0
-	*(uhci_qh_ptr+2) = 0x00000000;
-	*(uhci_qh_ptr+3) = 0x00000000;
-	
-	//sleep(50);
-
-	// Add new QH to frame list
-	*(uhci_frame_list_ptr) = ((uint32_t)(uint64_t)uhci_qh_ptr) | 0x2; // ptr to qh plus set as qh 
-
-	print_string("\n\r");
-	print_string("Transfer Setup Completed");
-
-
-	loops = 0;
-	while (1) {
-		if ( td_out->status.active == 0b0) {
-			// On Success
-			if ( (td_0->status.actual_length == 7)  ) {
-				// Clear Queue Head from Frame List
-				*uhci_frame_list_ptr = 0x1; 
-
-				print_string("\n\r");
-				print_string("Successful Transfer");
-			}
-			else {
-				print_string("\n\r");
-				print_string("Transfer Error");
-			}
-			break;
-		}
-		sleep(10);
-		loops++;
-		if (loops > 100) {
-			print_string("\n\r");
-			print_string("MAXED OUT!!!");
-			break;
-		}
-	}
-
-
-
-	
-	
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[REQUEST] ");
-	print_string("@");
-	print_string(hex_to_str(get_descriptor));
-	print_string("\n\r");
-	//uint32_t* tmp_request = (uint32_t*) get_descriptor;
-	print_string(hex_to_str(*(tmp_request)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(tmp_request+1)));
-	print_string("\n\r");
-	print_string("\n\r");
-
-	print_string("\n\r");
-	print_string("[QH]");
-	print_qh(uhci_qh_ptr);
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_0] ");
-	print_td((uint32_t*)td_0);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_1] ");
-	print_td((uint32_t*)td_1);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_2] ");
-	print_td((uint32_t*)td_2);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_3] ");
-	print_td((uint32_t*)td_3);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_OUT] ");
-	print_td((uint32_t*)td_out);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE");
-	print_string("\n\r");
-	usb_descriptor_device* descriptor_device = (usb_descriptor_device*) uhci_response;
-	print_string(hex_to_str(*(uint32_t*)uhci_response));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+1)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+2)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+3)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+4)));
-	
-	
-	// SETUP TD
-	td_0->next_descriptor = ((uint32_t)(uint64_t)td_1) | 0x4; // or on depth bit
-	td_0->status.low_speed = 0;
-	td_0->status.active = 1;
-	td_0->status.error_counter = 3; 
-	td_0->packet_header.packet_type = 0x2d;
-	td_0->packet_header.device = 0b0000001;
-	td_0->packet_header.endpoint = 0x0;
-	td_0->packet_header.data_toggle = 0b0;
-	td_0->packet_header.reserved = 0b0;
-	td_0->packet_header.maximum_length = 7;
-	td_0->buffer_addr = uhci_request;
-
-	// IN TD's
-	td_1->next_descriptor = ((uint32_t)(uint64_t)td_2) | 0x4;
-	td_1->status.low_speed = 0;
-	td_1->status.active = 1;
-	td_1->status.error_counter = 3; 
-	td_1->packet_header.packet_type = 0x69;	
-	td_1->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_1->packet_header.endpoint = 0x0;
-	td_1->packet_header.data_toggle = 0b1;
-	td_1->packet_header.reserved = 0b0;
-	td_1->packet_header.maximum_length = 7;
-	td_1->buffer_addr = uhci_response;
-
-	
-	// IN TD's
-	td_2->next_descriptor = ((uint32_t)(uint64_t)td_3) | 0x4;
-	td_2->status.low_speed = 0;
-	td_2->status.active = 1;
-	td_2->status.error_counter = 3; 
-	td_2->packet_header.packet_type = 0x69;	
-	td_2->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_2->packet_header.endpoint = 0x0;
-	td_2->packet_header.data_toggle = 0b0;
-	td_2->packet_header.reserved = 0b0;
-	td_2->packet_header.maximum_length = 7;
-	td_2->buffer_addr = uhci_response+8;
-
-	
-		// IN TD's
-	td_3->next_descriptor = ((uint32_t)(uint64_t)td_4) | 0x4;
-	td_3->status.low_speed = 0;
-	td_3->status.active = 1;
-	td_3->status.error_counter = 3; 
-	td_3->packet_header.packet_type = 0x69;	
-	td_3->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_3->packet_header.endpoint = 0x0;
-	td_3->packet_header.data_toggle = 0b1;
-	td_3->packet_header.reserved = 0b0;
-	td_3->packet_header.maximum_length = 7;
-	td_3->buffer_addr = uhci_response+16;
-
-	// IN TD's
-	td_4->next_descriptor = ((uint32_t)(uint64_t)td_out) | 0x4;
-	td_4->status.low_speed = 0;
-	td_4->status.active = 1;
-	td_4->status.error_counter = 3; 
-	td_4->packet_header.packet_type = 0x69;	
-	td_4->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_4->packet_header.endpoint = 0x0;
-	td_4->packet_header.data_toggle = 0b1;
-	td_4->packet_header.reserved = 0b0;
-	td_4->packet_header.maximum_length = 7;
-	td_4->buffer_addr = uhci_response+24;
-	
-
-	//OUT TD
-	td_out->next_descriptor = 0x00000001;
-	td_out->status.low_speed = 0;
-	td_out->status.active = 1;
-	td_out->status.error_counter = 3;
-	td_out->packet_header.packet_type = 0xe1;	
-	td_out->packet_header.device = 0b0000001; // Now we talk to the device we set up as device 1
-	td_out->packet_header.endpoint = 0x0;
-	td_out->packet_header.data_toggle = 0b1;
-	td_out->packet_header.reserved = 0b0;
-	td_out->packet_header.maximum_length = 2047; //63 //2047
-	td_out->buffer_addr = 0x0;
-
-	// UHCI REQUEST
-	get_descriptor->request_type.transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	get_descriptor->request_type.request_type = usb_request_types.STANDARD;
-	get_descriptor->request_type.recipient = usb_recipients.DEVICE;
-	get_descriptor->b_request = usb_standard_requests.GET_DESCRIPTOR;
-	get_descriptor->w_value = (b_descriptor_types.STRING << 8) | 0x02; //
-	get_descriptor->w_index = usb_language_id.ENGLISH_US;
-	get_descriptor->w_length = (0x00 << 8) | 0x1e;
-
-	//UHCI RESPONSE 
-	//uint32_t* tmp_response = (uint32_t*)uhci_response;
-	*tmp_response = 0x00000000;
-	*(tmp_response+1) = 0x00000000;
-	*(tmp_response+2) = 0x00000000;
-	*(tmp_response+3) = 0x00000000;
-	*(tmp_response+4) = 0x00000000;
-	*(tmp_response+5) = 0x00000000;
-
-	// QH	
-	*uhci_qh_ptr = (uint32_t)(uint64_t)td_out;// horizontal pointer to terminate // (uint32_t)(uint64_t)td_out; //horizontal pointer to td_out??? // 0x00000001
-	*(uhci_qh_ptr+1) = (uint32_t)(uint64_t)td_0; // vertical pointer to td_0
-	*(uhci_qh_ptr+2) = 0x00000000;
-	*(uhci_qh_ptr+3) = 0x00000000;
-	
-	//sleep(50);
-
-	// Add new QH to frame list
-	*(uhci_frame_list_ptr) = ((uint32_t)(uint64_t)uhci_qh_ptr) | 0x2; // ptr to qh plus set as qh 
-
-	print_string("\n\r");
-	print_string("Transfer Setup Completed");
-
-
-	loops = 0;
-	while (1) {
-		if ( td_out->status.active == 0b0) {
-			// On Success
-			if ( (td_0->status.actual_length == 7)  ) {
-				// Clear Queue Head from Frame List
-				*uhci_frame_list_ptr = 0x1; 
-
-				print_string("\n\r");
-				print_string("Successful Transfer");
-			}
-			else {
-				print_string("\n\r");
-				print_string("Transfer Error");
-			}
-			break;
-		}
-		sleep(10);
-		loops++;
-		if (loops > 100) {
-			print_string("\n\r");
-			print_string("MAXED OUT!!!");
-			break;
-		}
-	}
-	
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[REQUEST] ");
-	print_string("@");
-	print_string(hex_to_str(get_descriptor));
-	print_string("\n\r");
-	//uint32_t* tmp_request = (uint32_t*) get_descriptor;
-	print_string(hex_to_str(*(tmp_request)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(tmp_request+1)));
-	print_string("\n\r");
-	print_string("\n\r");
-
-	print_string("\n\r");
-	print_string("[QH]");
-	print_qh(uhci_qh_ptr);
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_0] ");
-	print_td((uint32_t*)td_0);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_1] ");
-	print_td((uint32_t*)td_1);
-
-	
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_2] ");
-	print_td((uint32_t*)td_2);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_3] ");
-	print_td((uint32_t*)td_3);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_4] ");
-	print_td((uint32_t*)td_4);
-	
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("[TD_OUT] ");
-	print_td((uint32_t*)td_out);
+	uint8_t i_product = (((usb_descriptor_device*)response)->i_product);
 
 	print_string("\n\r");
 	print_string("\n\r");
-	print_string("RESPONSE");
+	print_string("RESPONSE #3");
 	print_string("\n\r");
 	//usb_descriptor_device* descriptor_device = (usb_descriptor_device*) uhci_response;
-	print_string(hex_to_str(*(uint32_t*)uhci_response));
+	print_string(hex_to_str(*(uint32_t*)response));
 	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+1)));
+	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
 	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+2)));
+	print_string(hex_to_str(*(((uint32_t*)(response))+2)));
 	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+3)));
+	print_string(hex_to_str(*(((uint32_t*)(response))+3)));
 	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+4)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+5)));
+	print_string(hex_to_str(*(((uint32_t*)(response))+4)&0x0000ffff));
+
+	//uint32_t num_configs = *(((uint32_t*)(uhci_response))+4);
+
+
+	/*
+	* Get Product String Length
+	*/
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0x08;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.STRING << 8) | i_product;
+	w_index = usb_language_id.ENGLISH_US;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	uint8_t product_len = *(uint8_t*)response;
 
 	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+6)));
 	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(uhci_response))+7)));
-	
-	
+	print_string("RESPONSE #4");
+	print_string("\n\r");
+	print_string("Product Len: ");
+	print_string("\n\r");
+	print_string(hex_to_str(product_len));
+
+	/*
+	* Get Product String 
+	*/
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = product_len;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.STRING << 8) | i_product;
+	w_index = usb_language_id.ENGLISH_US;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
 	
 	print_string("\n\r");
 	print_string("\n\r");
-	int uhci_sz = 0x1e;
-	for (int i=2; i<uhci_sz; i++) {
-		uint8_t* response_ptr = (uint8_t*) uhci_response;
+	print_string("RESPONSE #5");
+	print_string("\n\r");
+	for (int i=2; i<response_num_bytes; i++) {
+		uint8_t* response_ptr = (uint8_t*) response;
 		if (i%2==0) {
 			uint8_t ch = hex_to_int((uint8_t) *(response_ptr+i));
 			print_char(ch);
@@ -689,7 +201,128 @@ void init_uhci() {
 	}	
 	
 
+	/*
+	 * 9 Bytes of Config Descriptor
+	 */
+
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = b_descriptor_sizes[b_descriptor_types.CONFIGURATION];
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.CONFIGURATION << 8) | 0x00; //0th config
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
 	
+	uint8_t config_len = (((usb_descriptor_configuration*)response)->b_length);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #6");
+	print_string("\n\r");
+	usb_parse_config( (uint8_t*)response, (uint8_t)response_num_bytes );
+
+
+
+	/*
+	 * FULL CONFIG
+	 */
+
+
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = config_len;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.CONFIGURATION << 8) | 0x00; //0th config
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	uint8_t i_configuration = (((usb_descriptor_configuration*)response)->i_configuration);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #7");
+	print_string("\n\r");
+	usb_parse_config((uint8_t*)response, (uint8_t)response_num_bytes);
+
+
+	
+	/*
+	 * Get Configuration String Length
+	 */
+
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0x08;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR;
+	w_value = (b_descriptor_types.STRING << 8) | i_configuration; //
+	w_index = usb_language_id.ENGLISH_US;
+
+	malloc(16+15);
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+
+	uint8_t config_str_len = *(uint8_t*)response;
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #8");
+	print_string("\n\r");
+	print_string(hex_to_str(config_str_len));
+	
+
+
+	/*
+	 * Get Configuration String
+	 */
+
+	low_speed = 0;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = config_str_len;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR;
+	w_value = (b_descriptor_types.STRING << 8) | i_configuration; //
+	w_index = usb_language_id.ENGLISH_US;
+
+	malloc(16);
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #9");
+	print_string("\n\r");
+
+	for (int i=2; i<response_num_bytes; i++) {
+		uint8_t* response_ptr = (uint8_t*) response;
+		if (i%2==0) {
+			uint8_t ch = hex_to_int((uint8_t) *(response_ptr+i));
+			print_char(ch);
+		}
+	}	
+
+
+
 
 }
 
@@ -801,13 +434,6 @@ uint8_t uhci_device_enable (uint16_t base_addr, uint8_t port) {
 	return success;
 }
 
-uint8_t uhci_set_addr () {
-
-}
-
-uint8_t uhci_get_descriptor () {
-
-}
 
 void print_td (uint32_t* td) {
 	print_string("@");
@@ -820,8 +446,6 @@ void print_td (uint32_t* td) {
 	print_string(hex_to_str((uint32_t) *(td+2) ));
 	print_string("\n\r");
 	print_string(hex_to_str((uint32_t) *(td+3) ));
-
-
 }
 
 void print_qh (uint32_t* qh_ptr) {
@@ -842,4 +466,237 @@ uint8_t hex_to_int (uint8_t hex) {
 	return out;
 }
 
+void usb_parse_config (uint8_t* buf, uint8_t sz) {
+	uint8_t* orig = buf; 
+	usb_descriptor_configuration* config;
+
+	while( (buf-orig)<sz ) {
+		uint8_t desc_len = *buf;
+		uint8_t desc_type = *(buf+1);
+		print_string("Type:");
+		print_string(hex_to_str(desc_type));
+
+		switch (desc_type) {
+			case 2: //b_descriptor_types.CONFIGURATION:
+				print_string("-config");
+				break;
+			case 4: //b_descriptor_types.INTERFACE:
+				print_string("-interface");
+				break;
+			case 5: //b_descriptor_types.ENDPOINT:
+				print_string("-endpoint");
+				break;
+			default:
+				print_string("-other");
+		}
+
+		print_string(", Len:");
+		print_string(hex_to_str(desc_len));
+		print_string("\n\r");
+
+		if ( desc_type == 2 ) {
+			config = (usb_descriptor_configuration*) buf;
+			print_string("  -");
+			print_string("wTotalLength: ");
+			print_string(hex_to_str(config->w_total_length));
+			print_string("\n\r");
+			print_string("  -");
+			print_string("bNumInterfaces: ");
+			print_string(hex_to_str(config->b_num_interfaces));
+			print_string("\n\r");
+			print_string("  -");
+			print_string("bConfigurationValue: ");
+			print_string(hex_to_str(config->b_configuration_value));
+			print_string("\n\r");
+			print_string("  -");
+			print_string("iConfiguration: ");
+			print_string(hex_to_str(config->i_configuration));
+			print_string("\n\r");
+		}
+
+		buf += desc_len;
+	}
+}
+
+uint32_t align16 (uint32_t sz) {
+	return (sz % 16 == 0) ? sz : sz + 16 - (sz % 16); 
+}
+
+uint32_t uhci_create_request (uint8_t low_speed, uint8_t device, uint8_t endpoint, uint8_t response_packet_sz, uint8_t response_num_bytes, uint8_t transfer_direction, uint8_t request_type, uint8_t recipient, uint8_t b_request, uint16_t w_value, uint16_t w_index, uint32_t* uhci_frame_list_ptr) {
+	uint8_t response_buf_packet = (response_num_bytes % response_packet_sz) == 0 ? 0 : 1; 
+	uint8_t response_num_packets = response_num_bytes / response_packet_sz + response_buf_packet;
+
+	uint32_t td_setup_orig = (uint32_t) malloc(sizeof(uhci_transfer_descriptor) + 16);
+	uint32_t td_status_orig = (uint32_t) malloc(sizeof(uhci_transfer_descriptor) + 16);
+	uhci_transfer_descriptor* td_setup = (uhci_transfer_descriptor*) align16(td_setup_orig);
+	uhci_transfer_descriptor* td_status = (uhci_transfer_descriptor*) align16(td_status_orig);
+
+	uint32_t tds_orig[response_num_packets];
+	uhci_transfer_descriptor* tds[response_num_packets]; 
+	//uhci_transfer_descriptor* tds[response_num_packets==0 ? 1 : response_num_packets]; 
+	for (uint8_t i=0; i<response_num_packets; i++) { 
+		 tds_orig[i] = (uint32_t) malloc(sizeof(uhci_transfer_descriptor) + 16);
+		 tds[i] = (uhci_transfer_descriptor*) align16(tds_orig[i]);
+		if ( tds[i] == 0 ) {
+			return 0;
+		}
+	}
+
+	uint32_t uhci_qh_orig = (uint32_t) malloc(16 + 16);
+	uint32_t* uhci_qh = (uint32_t*) align16(uhci_qh_orig);
+
+	uint32_t uhci_request = (uint32_t) malloc(8);
+
+	if ( uhci_request == 0 | uhci_qh == 0 | td_setup == 0 | td_status == 0 ) {
+		return 0;
+	}
+
+	uint32_t uhci_response = 0;
+	if (response_num_bytes != 0) {
+		uint32_t uhci_response = (uint32_t) malloc(response_num_bytes);
+		if (uhci_response == 0) {
+			return 0;
+		}
+	}
+
+	// SETUP TD
+	td_setup->next_descriptor = ( (uint32_t)(uint64_t)(response_num_bytes==0 ? td_status : tds[0]) )  | 0x4; // flip on depth bit
+	td_setup->status.low_speed = low_speed;
+	td_setup->status.active = 1;
+	td_setup->status.error_counter = 3; 
+	td_setup->packet_header.packet_type = uhci_packet_t.SETUP;
+	td_setup->packet_header.device = device;
+	td_setup->packet_header.endpoint = endpoint;
+	td_setup->packet_header.data_toggle = 0b0;
+	td_setup->packet_header.maximum_length = response_packet_sz - 1;
+	td_setup->buffer_addr = uhci_request;
+
+	// DATA TD's
+	for (uint8_t i=0; i<response_num_packets; i++) {
+		if ( i == (response_num_packets-1) ) {
+			tds[i]->next_descriptor = ((uint32_t)(uint64_t)td_status) | 0x4;
+		}
+		else {
+			tds[i]->next_descriptor = ((uint32_t)(uint64_t)tds[(i+1)]) | 0x4;
+		}
+		tds[i]->status.low_speed = low_speed;
+		tds[i]->status.active = 1;
+		tds[i]->status.error_counter = 3; 
+		tds[i]->packet_header.packet_type = (transfer_direction==usb_transfer_directions.DEVICE_TO_HOST) ? uhci_packet_t.IN : uhci_packet_t.OUT;	
+		tds[i]->packet_header.device = device; // Now we talk to the device we set up as device 1
+		tds[i]->packet_header.endpoint = endpoint;
+		tds[i]->packet_header.data_toggle = ((i%2==0) ? 0b1: 0b0);
+		tds[i]->packet_header.maximum_length = response_packet_sz - 1;
+		tds[i]->buffer_addr = (uhci_response + 8*(i));
+	}
+
+	//STATUS TD
+	td_status->next_descriptor = 0x00000001;
+	td_status->status.low_speed = low_speed;
+	td_status->status.active = 1;
+	td_status->status.error_counter = 3;
+	td_status->packet_header.packet_type = (transfer_direction==usb_transfer_directions.DEVICE_TO_HOST) ? uhci_packet_t.OUT : uhci_packet_t.IN;		
+	td_status->packet_header.device = device; // Now we talk to the device we set up as device 1
+	td_status->packet_header.endpoint = endpoint;
+	td_status->packet_header.data_toggle = 0b1;
+	td_status->packet_header.maximum_length = 2047; // low_speed ? 63 : 2047; 
+	td_status->buffer_addr = 0x0;
+
+	// UHCI REQUEST
+	usb_device_request* get_descriptor = (usb_device_request*)(uint64_t)(uhci_request);
+	get_descriptor->request_type.transfer_direction = transfer_direction;
+	get_descriptor->request_type.request_type = request_type;
+	get_descriptor->request_type.recipient = recipient;
+	get_descriptor->b_request = b_request;
+	get_descriptor->w_value = w_value;
+	get_descriptor->w_index = w_index;
+	get_descriptor->w_length = (0x00 << 8) | response_num_bytes;
+
+	// QH	
+	*uhci_qh = (uint32_t)(uint64_t)td_status;// horizontal pointer to terminate // (uint32_t)(uint64_t)td_out; //horizontal pointer to td_out??? // 0x00000001
+	*(uhci_qh+1) = (uint32_t)(uint64_t)td_setup; // vertical pointer to tds[0]
+	*(uhci_qh+2) = 0x00000000;
+	*(uhci_qh+3) = 0x00000000;
+	
+	// Add new QH to frame list
+	*(uhci_frame_list_ptr) = ((uint32_t)(uint64_t)uhci_qh) | 0x2; // ptr to qh plus set as qh 
+
+	print_string("\n\r");
+	print_string("Transfer Setup Completed");
+
+	uint8_t loops = 0;
+	while (1) {
+		if ( td_status->status.active == 0b0) {
+			// On Success
+			if ( (td_setup->status.actual_length == (response_packet_sz-1) )  ) {
+				// Clear Queue Head from Frame List
+				*uhci_frame_list_ptr = 0x1; 
+
+				print_string("\n\r");
+				print_string("Successful Transfer");
+			}
+			else {
+				print_string("\n\r");
+				print_string("Transfer Error");
+			}
+			break;
+		}
+		sleep(10);
+		loops++;
+		if (loops > 100) {
+			print_string("\n\r");
+			print_string("MAXED OUT!!!");
+			break;
+		}
+	}
+
+	/*
+	if (response_packet_sz == 0x40) {
+		print_string("\n\r");
+		print_string("\n\r");
+		print_string("!!! SETUP !!!");
+		print_string("\n\r");
+		print_td(td_setup);
+
+		print_string("\n\r");
+		print_string("\n\r");
+		print_string("!!! IN !!!");
+		print_string("\n\r");
+		print_td(tds[0]);
+
+		print_string("\n\r");
+		print_string("\n\r");
+		print_string("!!! STATUS !!!");
+		print_string("\n\r");
+		print_td(td_status);
+		print_string("\n\r");
+
+		print_string("\n\r");
+		print_string("\n\r");
+		print_string("!!! REQUEST !!!");
+		print_string("\n\r");
+		print_string(hex_to_str(*((uint32_t*)uhci_request)));
+		print_string("\n\r");
+		print_string(hex_to_str(*(((uint32_t*)uhci_request)+1)));
+	}
+	*/
+
+	
+	free((void*)td_setup_orig);
+	free((void*)td_status_orig);
+	for (uint8_t i=0; i<response_num_packets; i++) { 
+		free((void*)tds_orig[i]);
+	}
+	free((void*)uhci_qh_orig);
+	free((void*)uhci_request);
+	
+	return uhci_response;
+}
+
+// TO DO 
+/*
+ Larger Packet Sizes
+ Set Configuration
+ Pass Through USB
+*/
 

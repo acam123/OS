@@ -127,6 +127,13 @@ typedef struct _uhci_transfer_descriptor {
 	uint32_t reserved_3;
 } __attribute__((__packed__)) uhci_transfer_descriptor;
 
+typedef struct _uhci_packet_defs {
+	uint8_t SETUP;
+	uint8_t IN;
+	uint8_t OUT;
+} uhci_packet_t_defs;
+extern uhci_packet_t_defs uhci_packet_t; 
+
 
 void init_uhci();
 
@@ -142,6 +149,10 @@ uint8_t uhci_device_enable (uint16_t base_addr, uint8_t port);
 void print_td (uint32_t* td);
 void print_qh (uint32_t* qh_ptr);
 uint8_t hex_to_int (uint8_t hex);
+void usb_parse_config(uint8_t* buf, uint8_t sz);
+uint32_t align16 (uint32_t sz);
+uint32_t uhci_create_request (uint8_t low_speed, uint8_t device, uint8_t endpoint, uint8_t response_packet_sz, uint8_t response_num_bytes, uint8_t transfer_direction, uint8_t request_type, uint8_t recipient, uint8_t b_request, uint16_t w_value, uint16_t w_index, uint32_t* uhci_frame_list_ptr);
+
 
 
 #endif

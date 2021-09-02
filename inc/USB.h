@@ -44,17 +44,7 @@ typedef struct _b_descriptor_types_defs {
 extern b_descriptor_types_defs b_descriptor_types;
 
 // RETURN SIZE OF DESCRIPTOR TYPE
-typedef struct _b_descriptor_sizes_defs {
-	uint8_t DEVICE;
-	uint8_t CONFIGURATION;
-	uint8_t STRING;
-	uint8_t INTERFACE;
-	uint8_t ENDPOINT;
-	uint8_t DEVICE_QUALIFIER;
-	uint8_t OTHER_SPEED_CONFIG;
-	uint8_t INTERFACE_POWER;
-} b_descriptor_sizes_defs;
-extern b_descriptor_sizes_defs  b_descriptor_sizes;
+extern uint8_t b_descriptor_sizes[];
 
 typedef struct _usb_transfer_directions_defs { 
 	uint8_t HOST_TO_DEVICE;
@@ -77,6 +67,30 @@ typedef struct _usb_recipients_defs {
 	uint8_t OTHER;
 } usb_recipients_defs;
 extern usb_recipients_defs usb_recipients;
+
+typedef struct _bm_desc_endpnt_attr_trasnfer_t_defs {
+	uint8_t CONTROL;
+	uint8_t ISOCHRONOUS;
+	uint8_t BULK;
+	uint8_t INTERRUPT;
+} bm_desc_endpnt_attr_trasnfer_t_defs;
+extern bm_desc_endpnt_attr_trasnfer_t_defs bm_desc_endpnt_attr_trasnfer_t;
+
+typedef struct _bm_desc_endpnt_attr_synch_t_defs {
+	uint8_t NO_SYNCH;
+	uint8_t ASYNCH;
+	uint8_t ADAPTIVE;
+	uint8_t SYNCH;
+} bm_desc_endpnt_attr_synch_t_defs;
+extern bm_desc_endpnt_attr_synch_t_defs bm_desc_endpnt_attr_synch_t;
+
+typedef struct _bm_desc_endpnt_attr_usage_t_defs {
+	uint8_t DATA;
+	uint8_t FEEDBACK;
+	uint8_t IMPLICIT;
+	uint8_t RESERVED;
+} bm_desc_endpnt_attr_usage_t_defs;
+extern bm_desc_endpnt_attr_usage_t_defs bm_desc_endpnt_attr_usage_t;
 // END OF DEFINITION STRUCTS
 
 /*
@@ -112,6 +126,66 @@ typedef struct _usb_descriptor_device {
 	uint8_t  i_serial_number;
 	uint8_t  b_num_configurations;
 } __attribute__((__packed__)) usb_descriptor_device;
+
+typedef struct _bm_desc_config_attr_t {
+	uint8_t reserved_0 		:5; // 0b00000
+	uint8_t remote_wakeup 	:1; // 0 = not supported, 1 = supported
+	uint8_t self_powered	:1; // 0 = bus powered, 1 = has local power source (if b_max_power != 0, may use bus power)
+	uint8_t reserved_1		:1; // 0b1
+} bm_desc_config_attr_t;
+
+typedef struct _usb_descriptor_configuration {
+	uint8_t b_length;
+	uint8_t b_descriptor_type;
+	uint16_t w_total_length;
+	uint8_t b_num_interfaces;
+	uint8_t b_configuration_value;
+	uint8_t i_configuration;
+	bm_desc_config_attr_t bm_attributes;
+	uint8_t b_max_power;
+} __attribute__((__packed__)) usb_descriptor_configuration;
+
+typedef struct _usb_descriptor_interface {
+	uint8_t b_length;
+	uint8_t b_descriptor_type;
+	uint8_t b_interface_number;
+	uint8_t b_alternate_setting;
+	uint8_t b_num_endpoints;
+	uint8_t b_interface_class;
+	uint8_t b_interface_subclass;
+	uint8_t b_interface_protocol;
+	uint8_t i_interface;
+} __attribute__((__packed__)) usb_descriptor_interface;
+
+typedef struct _bm_desc_endpnt_attr_t {
+	uint8_t transfer_type 	:2;
+	uint8_t synch_type 		:2;
+	uint8_t usage_type		:2;
+	uint8_t reserved_0		:2; //0's
+
+} bm_desc_endpnt_attr_t;
+
+typedef struct _usb_descriptor_endpoint {
+	uint8_t b_length;
+	uint8_t b_descriptor_type;
+	uint8_t b_endpoint_address;
+	bm_desc_endpnt_attr_t bm_attributes; //bitmap
+	uint16_t w_max_packet_size;
+	uint8_t b_interval;
+} __attribute__((__packed__)) usb_descriptor_endpoint;
+
+typedef struct _usb_descriptor_device_qualifier {
+	uint8_t b_length;
+	uint8_t b_descriptor_type;
+	uint16_t bcd_usb;
+	uint8_t b_device_class;
+	uint8_t b_device_subclass;
+	uint8_t b_device_protocol;
+	uint8_t b_max_packet_size;
+	uint8_t b_num_configurations;
+	uint8_t b_reserved; // 0's
+} __attribute__((__packed__)) usb_descriptor_device_qualifier;
+
 
 void init_usb();
 
