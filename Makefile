@@ -35,9 +35,11 @@ run : AidanOS.iso
 	#-device piix3-usb-uhci -device usb-host,bus=usb-bus.0,port=1,vendorid=0x18a5,productid=0x0302 // Vertbatim Flash Drive 
 	#-device piix3-usb-uhci -device usb-host,bus=usb-bus.0,port=1,vendorid=0xc0f4,productid=0x04c0 // keyboard
 	#-device piix3-usb-uhci -device usb-audio,bus=usb-bus.0,port=1 // virtual usb-audio
+	#-device piix3-usb-uhci -device usb-mouse,bus=usb-bus.0,port=1 // virtual usb-mouse
+	#-device piix3-usb-uhci -device usb-storage,bus=usb-bus.0,port=1,drive=usb_stick -drive if=none,id=usb_stick,format=raw,file=usb_stick.img // virtual usb-storage
 	#-machine type=q35,accel=hvf -cpu host
-	qemu-system-x86_64 -machine type=q35 -bios /usr/local/Cellar/qemu/6.0.0/share/qemu/bios.bin -drive file=AidanOS.iso,format=raw -m 512M -device piix3-usb-uhci -device usb-audio,bus=usb-bus.0,port=1 
+	qemu-system-x86_64 -machine type=q35 -bios /usr/local/Cellar/qemu/6.1.0_1/share/qemu/bios.bin -drive file=AidanOS.iso,format=raw -m 512M -device piix3-usb-uhci -device usb-storage,bus=usb-bus.0,port=1,drive=usb_stick -drive if=none,id=usb_stick,format=raw,file=usb_stick.img 
 .PHONY : clean
 clean :
-	-rm *.o *.bin inc/*.o
+	rm *.o *.bin inc/*.o
 

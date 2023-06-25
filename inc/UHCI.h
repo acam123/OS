@@ -24,6 +24,7 @@ extern pci_meta uhci_endpoints[10];
 typedef struct _uhci_port_tracker_t {
 	uint8_t port;
 	uint8_t low_speed;
+	uint8_t enabled;
 } uhci_port_tracker_t;
 
 typedef struct _uhci_command_register {
@@ -149,10 +150,10 @@ uint8_t uhci_device_enable (uint16_t base_addr, uint8_t port);
 void print_td (uint32_t* td);
 void print_qh (uint32_t* qh_ptr);
 uint8_t hex_to_int (uint8_t hex);
-void usb_parse_config(uint8_t* buf, uint8_t sz);
+void usb_parse_config(uint8_t* buf, uint8_t sz, uint32_t* endpoints_buf);
 uint32_t align16 (uint32_t sz);
 uint32_t uhci_create_request (uint8_t low_speed, uint8_t device, uint8_t endpoint, uint8_t response_packet_sz, uint8_t response_num_bytes, uint8_t transfer_direction, uint8_t request_type, uint8_t recipient, uint8_t b_request, uint16_t w_value, uint16_t w_index, uint32_t* uhci_frame_list_ptr);
-
+uint8_t uhci_device_start (uint32_t* uhci_frame_list_ptr, uint8_t speed);
 
 
 #endif

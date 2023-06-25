@@ -7,6 +7,12 @@
 /*
  * PSEUDO NAMSPACE DEFINITION STRUCTS (DEFINED IN USB.C)
  */
+typedef struct _desc_endpnt_b_addr_t_fields_directions_defs {
+	uint8_t OUT;
+	uint8_t IN;
+} desc_endpnt_b_addr_t_fields_directions_defs;
+extern desc_endpnt_b_addr_t_fields_directions_defs desc_endpnt_b_addr_t_fields_directions;
+
 // Language IDs
 typedef struct _usb_language_id_defs {
 	uint16_t ENGLISH_US;
@@ -68,29 +74,29 @@ typedef struct _usb_recipients_defs {
 } usb_recipients_defs;
 extern usb_recipients_defs usb_recipients;
 
-typedef struct _bm_desc_endpnt_attr_trasnfer_t_defs {
+typedef struct _desc_endpnt_bm_attr_trasnfer_t_defs {
 	uint8_t CONTROL;
 	uint8_t ISOCHRONOUS;
 	uint8_t BULK;
 	uint8_t INTERRUPT;
-} bm_desc_endpnt_attr_trasnfer_t_defs;
-extern bm_desc_endpnt_attr_trasnfer_t_defs bm_desc_endpnt_attr_trasnfer_t;
+} desc_endpnt_bm_attr_trasnfer_t_defs;
+extern desc_endpnt_bm_attr_trasnfer_t_defs desc_endpnt_bm_attr_trasnfer_t;
 
-typedef struct _bm_desc_endpnt_attr_synch_t_defs {
+typedef struct _desc_endpnt_bm_attr_synch_t_defs {
 	uint8_t NO_SYNCH;
 	uint8_t ASYNCH;
 	uint8_t ADAPTIVE;
 	uint8_t SYNCH;
-} bm_desc_endpnt_attr_synch_t_defs;
-extern bm_desc_endpnt_attr_synch_t_defs bm_desc_endpnt_attr_synch_t;
+} desc_endpnt_bm_attr_synch_t_defs;
+extern desc_endpnt_bm_attr_synch_t_defs desc_endpnt_bm_attr_synch_t;
 
-typedef struct _bm_desc_endpnt_attr_usage_t_defs {
+typedef struct _desc_endpnt_bm_attr_usage_t_defs {
 	uint8_t DATA;
 	uint8_t FEEDBACK;
 	uint8_t IMPLICIT;
 	uint8_t RESERVED;
-} bm_desc_endpnt_attr_usage_t_defs;
-extern bm_desc_endpnt_attr_usage_t_defs bm_desc_endpnt_attr_usage_t;
+} desc_endpnt_bm_attr_usage_t_defs;
+extern desc_endpnt_bm_attr_usage_t_defs desc_endpnt_bm_attr_usage_t;
 // END OF DEFINITION STRUCTS
 
 /*
@@ -157,19 +163,34 @@ typedef struct _usb_descriptor_interface {
 	uint8_t i_interface;
 } __attribute__((__packed__)) usb_descriptor_interface;
 
-typedef struct _bm_desc_endpnt_attr_t {
+typedef struct _desc_endpnt_bm_attr_t_fields {
 	uint8_t transfer_type 	:2;
 	uint8_t synch_type 		:2;
 	uint8_t usage_type		:2;
 	uint8_t reserved_0		:2; //0's
+} desc_endpnt_bm_attr_t_fields;
 
-} bm_desc_endpnt_attr_t;
+typedef union _desc_endpnt_bm_attr_t {
+	uint8_t bits;
+	desc_endpnt_bm_attr_t_fields fields;
+} desc_endpnt_bm_attr_t;
+
+typedef struct _desc_endpnt_b_addr_t_fields {
+	uint8_t endpoint_number :4;
+	uint8_t reserved_0 		:3;
+	uint8_t direction 		:1; // 0 = Out, 1 = In
+} desc_endpnt_b_addr_t_fields;
+
+typedef union _desc_endpnt_b_addr_t {
+	uint8_t bits;
+	desc_endpnt_b_addr_t_fields fields; 
+} desc_endpnt_b_addr_t;
 
 typedef struct _usb_descriptor_endpoint {
 	uint8_t b_length;
 	uint8_t b_descriptor_type;
-	uint8_t b_endpoint_address;
-	bm_desc_endpnt_attr_t bm_attributes; //bitmap
+	desc_endpnt_b_addr_t b_endpoint_address; //bitmap
+	desc_endpnt_bm_attr_t bm_attributes; //bitmap
 	uint16_t w_max_packet_size;
 	uint8_t b_interval;
 } __attribute__((__packed__)) usb_descriptor_endpoint;

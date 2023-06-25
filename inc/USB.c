@@ -1,5 +1,10 @@
 #include "USB.h" 
 
+desc_endpnt_b_addr_t_fields_directions_defs desc_endpnt_b_addr_t_fields_directions = {
+	.OUT = 0,
+	.IN = 1
+};
+
 usb_language_id_defs usb_language_id = {
 	.ENGLISH_US = 0x0409
 	//...
@@ -52,21 +57,21 @@ usb_recipients_defs usb_recipients = {
 	.OTHER = 3
 };
 
-bm_desc_endpnt_attr_trasnfer_t_defs bm_desc_endpnt_attr_trasnfer_t = {
+desc_endpnt_bm_attr_trasnfer_t_defs desc_endpnt_bm_attr_trasnfer_t = {
 	.CONTROL = 0b00,
 	.ISOCHRONOUS = 0b01,
 	.BULK = 0b10,
 	.INTERRUPT = 0b11
 };
 
-bm_desc_endpnt_attr_synch_t_defs bm_desc_endpnt_attr_synch_t = {
+desc_endpnt_bm_attr_synch_t_defs desc_endpnt_bm_attr_synch_t = {
 	.NO_SYNCH = 0b00,
 	.ASYNCH = 0b01,
 	.ADAPTIVE = 0b10,
 	.SYNCH = 0b11
 };
 
-bm_desc_endpnt_attr_usage_t_defs bm_desc_endpnt_attr_usage_t = {
+desc_endpnt_bm_attr_usage_t_defs desc_endpnt_bm_attr_usage_t = {
 	.DATA = 0b00,
 	.FEEDBACK = 0b01,
 	.IMPLICIT = 0b10,

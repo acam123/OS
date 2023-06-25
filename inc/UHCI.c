@@ -36,293 +36,13 @@ void init_uhci() {
 
 	uhci_devices_config(bar_4);
 
-/*
-	- Get Device Descriptor (8_Byte_Request, 8_Byte_Packets, Device_0) -> Max_Packet_Size
-	- Get Device Descriptor (Descriptor_Size_Request, Max_Packet_Size, Device_0) -> Full Descriptor Info (String_Indexes for iMan, iProd, Serial No; # of Configurations)
-	- Set Address (0_Byte_Request, Max_Packet_Size, Device_0) 
-	- Get String Descriptor (8_Byte_Request, Max_Packet_Size, Device_1, String_Index_0, Lang_0) -> Languages Supported
-	- Get String Descriptor (8_Byte_Request, Max_Packet_Size, Device_1, String_Index_1, Lang_English) -> String Length
-	- Get String Descriptor (String_Length, Max_Packet_Size, Device_1, String_Index_1, Lang_English) -> String
-
-	- **Get Configuration (1_Byte_Request, Max_Packet_Size, Device_1 ) -> Default Config Number ???
-	- Get Configuration Descriptor (9 bytes) -> Config_Total_Length (of config & it's interface(s), endpoint(s), other class & vendor specific descriptor types); Config_String_Index
-	- Get Configuration Descriptor (Config_Total_Length & parse)
-	- Get String Descriptor (Config_String_Index) -> String_Length
-	- Get String Descriptor (Config_String_Index, String_Length) -> String
-	- **Set Configuration 
-*/	
-
-	/*
-	 * 8 bytes of Device Descriptor
-	 */
-	uint8_t max_packet_size = 0x08;
-
-	uint8_t low_speed = 0;
-	uint8_t device = 0;
-	uint8_t endpoint = 0;
-	uint8_t response_packet_sz = max_packet_size;
-	uint8_t response_num_bytes = 0x08;
-	uint8_t transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	uint8_t request_type = usb_request_types.STANDARD;
-	uint8_t recipient = usb_recipients.DEVICE;
-	uint8_t b_request = usb_standard_requests.GET_DESCRIPTOR;
-	uint16_t w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
-	uint16_t w_index = 0x0000;
-
-	uint32_t response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	//max_packet_size = (((usb_descriptor_device*)response)->b_max_packet_size);
-
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #1");
-	print_string("\n\r");
-	print_string(hex_to_str(*(uint32_t*)response));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
-	
-	/*
-	 * SET ADDRESS
-	 */
-	
-	uint8_t device_address = 0x01;
-
-	low_speed = 0;
-	device = 0;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = 0;
-	transfer_direction = usb_transfer_directions.HOST_TO_DEVICE;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.SET_ADDRESS; 
-	w_value = device_address; // set as device 1
-	w_index = 0x0000;
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	print_string("\n\r");
-	print_string("RESPONSE #2");
-	print_string("\n\r");
-	print_string("ADDRESS SET!!!");
-
-	/*
-	 * Full Device Descriptor
-	 */
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = b_descriptor_sizes[b_descriptor_types.DEVICE];
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR; 
-	w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
-	w_index = 0x000;
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	uint8_t i_product = (((usb_descriptor_device*)response)->i_product);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #3");
-	print_string("\n\r");
-	//usb_descriptor_device* descriptor_device = (usb_descriptor_device*) uhci_response;
-	print_string(hex_to_str(*(uint32_t*)response));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(response))+2)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(response))+3)));
-	print_string("\n\r");
-	print_string(hex_to_str(*(((uint32_t*)(response))+4)&0x0000ffff));
-
-	//uint32_t num_configs = *(((uint32_t*)(uhci_response))+4);
-
-
-	/*
-	* Get Product String Length
-	*/
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = 0x08;
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR; 
-	w_value = (b_descriptor_types.STRING << 8) | i_product;
-	w_index = usb_language_id.ENGLISH_US;
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	uint8_t product_len = *(uint8_t*)response;
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #4");
-	print_string("\n\r");
-	print_string("Product Len: ");
-	print_string("\n\r");
-	print_string(hex_to_str(product_len));
-
-	/*
-	* Get Product String 
-	*/
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = product_len;
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR; 
-	w_value = (b_descriptor_types.STRING << 8) | i_product;
-	w_index = usb_language_id.ENGLISH_US;
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #5");
-	print_string("\n\r");
-	for (int i=2; i<response_num_bytes; i++) {
-		uint8_t* response_ptr = (uint8_t*) response;
-		if (i%2==0) {
-			uint8_t ch = hex_to_int((uint8_t) *(response_ptr+i));
-			print_char(ch);
+	for (uint8_t i=0; i<uhci_port_tracker_count; i++ ) {
+		uint8_t speed;
+		if (uhci_port_tracker[i].enabled == 1) {
+			speed = uhci_port_tracker[i].low_speed;
+			uhci_device_start (uhci_frame_list_ptr, speed);
 		}
-	}	
-	
-
-	/*
-	 * 9 Bytes of Config Descriptor
-	 */
-
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = b_descriptor_sizes[b_descriptor_types.CONFIGURATION];
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR; 
-	w_value = (b_descriptor_types.CONFIGURATION << 8) | 0x00; //0th config
-	w_index = 0x0000;
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	uint8_t config_len = (((usb_descriptor_configuration*)response)->b_length);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #6");
-	print_string("\n\r");
-	usb_parse_config( (uint8_t*)response, (uint8_t)response_num_bytes );
-
-
-
-	/*
-	 * FULL CONFIG
-	 */
-
-
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = config_len;
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR; 
-	w_value = (b_descriptor_types.CONFIGURATION << 8) | 0x00; //0th config
-	w_index = 0x0000;
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-	
-	uint8_t i_configuration = (((usb_descriptor_configuration*)response)->i_configuration);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #7");
-	print_string("\n\r");
-	usb_parse_config((uint8_t*)response, (uint8_t)response_num_bytes);
-
-
-	
-	/*
-	 * Get Configuration String Length
-	 */
-
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = 0x08;
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR;
-	w_value = (b_descriptor_types.STRING << 8) | i_configuration; //
-	w_index = usb_language_id.ENGLISH_US;
-
-	malloc(16+15);
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-
-	uint8_t config_str_len = *(uint8_t*)response;
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #8");
-	print_string("\n\r");
-	print_string(hex_to_str(config_str_len));
-	
-
-
-	/*
-	 * Get Configuration String
-	 */
-
-	low_speed = 0;
-	device = device_address;
-	endpoint = 0;
-	response_packet_sz = max_packet_size;
-	response_num_bytes = config_str_len;
-	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
-	request_type = usb_request_types.STANDARD;
-	recipient = usb_recipients.DEVICE;
-	b_request = usb_standard_requests.GET_DESCRIPTOR;
-	w_value = (b_descriptor_types.STRING << 8) | i_configuration; //
-	w_index = usb_language_id.ENGLISH_US;
-
-	malloc(16);
-
-	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
-
-	print_string("\n\r");
-	print_string("\n\r");
-	print_string("RESPONSE #9");
-	print_string("\n\r");
-
-	for (int i=2; i<response_num_bytes; i++) {
-		uint8_t* response_ptr = (uint8_t*) response;
-		if (i%2==0) {
-			uint8_t ch = hex_to_int((uint8_t) *(response_ptr+i));
-			print_char(ch);
-		}
-	}	
-
-
-
+	}
 
 }
 
@@ -400,16 +120,19 @@ uint8_t uhci_devices_config (uint16_t base_addr) {
 
 		// Enable Device
 		uint8_t enabled = uhci_device_enable(base_addr, port);
+		if (enabled == 1) {
+			uhci_port_tracker[i].enabled = 1;
+		}
 	}
 }
 
 uint8_t uhci_device_reset (uint16_t base_addr, uint8_t port) {
-	uint8_t success = 1;
+	uint8_t success = 0;
 	out_16(base_addr+port, 0x200); // reset device
 	sleep(50.0);
 	out_16(base_addr+port, in_16(base_addr+port) & ~(0x0200) ); // stop the reset
 	sleep(10.0);
-	success = 0;
+	success = 1;
 	return success;
 }
 
@@ -420,7 +143,7 @@ uint8_t uhci_device_low_speed (uint16_t base_addr, uint8_t port) {
 
 	
 uint8_t uhci_device_enable (uint16_t base_addr, uint8_t port) {
-	uint8_t success = 1;
+	uint8_t success = 0;
 
 	//enable device, clear status change, enable port
 	out_16(base_addr+port, in_16(base_addr+port) | 0b1110);
@@ -429,7 +152,7 @@ uint8_t uhci_device_enable (uint16_t base_addr, uint8_t port) {
 	//verify enabled
 	if ( (in_16(base_addr+port) & 0b0100) == 0b0100 ) {
 		//enabled
-		success = 0;
+		success = 1;
 	}
 	return success;
 }
@@ -466,54 +189,110 @@ uint8_t hex_to_int (uint8_t hex) {
 	return out;
 }
 
-void usb_parse_config (uint8_t* buf, uint8_t sz) {
+void usb_parse_config (uint8_t* buf, uint8_t sz, uint32_t* endpoints_buf) {
 	uint8_t* orig = buf; 
-	usb_descriptor_configuration* config;
+	usb_descriptor_configuration* configuration;
+	usb_descriptor_interface* interface;
+	usb_descriptor_endpoint* endpoint;
+
+	uint8_t endpoint_count = 0;
 
 	while( (buf-orig)<sz ) {
 		uint8_t desc_len = *buf;
 		uint8_t desc_type = *(buf+1);
-		print_string("Type:");
+		
+
+		print_string("Len:");
+		print_string(hex_to_str(desc_len));
+		print_string(", Type:");
 		print_string(hex_to_str(desc_type));
 
 		switch (desc_type) {
 			case 2: //b_descriptor_types.CONFIGURATION:
+				configuration = (usb_descriptor_configuration*) buf;
 				print_string("-config");
+				print_string("\n\r");
+				print_string("  -");
+				print_string("wTotalLength: ");
+				print_string(hex_to_str(configuration->w_total_length));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bNumInterfaces: ");
+				print_string(hex_to_str(configuration->b_num_interfaces));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bConfigurationValue: ");
+				print_string(hex_to_str(configuration->b_configuration_value));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("iConfiguration: ");
+				print_string(hex_to_str(configuration->i_configuration));
+				print_string("\n\r");
 				break;
 			case 4: //b_descriptor_types.INTERFACE:
+				interface = (usb_descriptor_interface*) buf;
 				print_string("-interface");
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bInterfaceNumber: ");
+				print_string(hex_to_str(interface->b_interface_number));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bAlternateSetting: ");
+				print_string(hex_to_str(interface->b_alternate_setting));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bNumEndpoints: ");
+				print_string(hex_to_str(interface->b_num_endpoints));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bInterfaceClass: ");
+				print_string(hex_to_str(interface->b_interface_class));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bInterfaceSublass: ");
+				print_string(hex_to_str(interface->b_interface_subclass));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bInterfaceProtocol: ");
+				print_string(hex_to_str(interface->b_interface_protocol));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("iInterface: ");
+				print_string(hex_to_str(interface->i_interface));
+				print_string("\n\r");
 				break;
 			case 5: //b_descriptor_types.ENDPOINT:
+				endpoint = (usb_descriptor_endpoint*) buf;
+				if (endpoint_count < 2) {
+					*(endpoints_buf+endpoint_count) = (uint32_t*)buf;
+					endpoint_count++;
+				}
+
 				print_string("-endpoint");
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bEndpointAddress: ");
+				print_string(hex_to_str(endpoint->b_endpoint_address.bits));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bmAttributes: ");
+				//print_string(hex_to_str( *(uint8_t*)&endpoint->bm_attributes) );
+				print_string(hex_to_str(endpoint->bm_attributes.bits));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("wMaxPacketSize: ");
+				print_string(hex_to_str(endpoint->w_max_packet_size));
+				print_string("\n\r");
+				print_string("  -");
+				print_string("bInterval: ");
+				print_string(hex_to_str(endpoint->b_interval));
+				print_string("\n\r");
 				break;
 			default:
 				print_string("-other");
+				print_string("\n\r");
 		}
-
-		print_string(", Len:");
-		print_string(hex_to_str(desc_len));
-		print_string("\n\r");
-
-		if ( desc_type == 2 ) {
-			config = (usb_descriptor_configuration*) buf;
-			print_string("  -");
-			print_string("wTotalLength: ");
-			print_string(hex_to_str(config->w_total_length));
-			print_string("\n\r");
-			print_string("  -");
-			print_string("bNumInterfaces: ");
-			print_string(hex_to_str(config->b_num_interfaces));
-			print_string("\n\r");
-			print_string("  -");
-			print_string("bConfigurationValue: ");
-			print_string(hex_to_str(config->b_configuration_value));
-			print_string("\n\r");
-			print_string("  -");
-			print_string("iConfiguration: ");
-			print_string(hex_to_str(config->i_configuration));
-			print_string("\n\r");
-		}
-
 		buf += desc_len;
 	}
 }
@@ -651,37 +430,30 @@ uint32_t uhci_create_request (uint8_t low_speed, uint8_t device, uint8_t endpoin
 	}
 
 	/*
-	if (response_packet_sz == 0x40) {
+	if (b_request == 8) {
 		print_string("\n\r");
-		print_string("\n\r");
-		print_string("!!! SETUP !!!");
-		print_string("\n\r");
+		print_string("SETUP");
 		print_td(td_setup);
-
 		print_string("\n\r");
 		print_string("\n\r");
-		print_string("!!! IN !!!");
-		print_string("\n\r");
+		print_string("DATA");
 		print_td(tds[0]);
-
 		print_string("\n\r");
 		print_string("\n\r");
-		print_string("!!! STATUS !!!");
-		print_string("\n\r");
+		print_string("STATUS");
 		print_td(td_status);
 		print_string("\n\r");
-
 		print_string("\n\r");
+		print_string("REQUEST");
 		print_string("\n\r");
-		print_string("!!! REQUEST !!!");
+		print_string(hex_to_str((*((uint32_t*)uhci_request))));
 		print_string("\n\r");
-		print_string(hex_to_str(*((uint32_t*)uhci_request)));
+		print_string(hex_to_str((*((uint32_t*)(uhci_request+4)))));
 		print_string("\n\r");
-		print_string(hex_to_str(*(((uint32_t*)uhci_request)+1)));
+		
 	}
 	*/
 
-	
 	free((void*)td_setup_orig);
 	free((void*)td_status_orig);
 	for (uint8_t i=0; i<response_num_packets; i++) { 
@@ -693,10 +465,389 @@ uint32_t uhci_create_request (uint8_t low_speed, uint8_t device, uint8_t endpoin
 	return uhci_response;
 }
 
+uint8_t uhci_device_start (uint32_t* uhci_frame_list_ptr, uint8_t speed) {
+	/*
+	- Get Device Descriptor (8_Byte_Request, 8_Byte_Packets, Device_0) -> Max_Packet_Size
+	- Get Device Descriptor (Descriptor_Size_Request, Max_Packet_Size, Device_0) -> Full Descriptor Info (String_Indexes for iMan, iProd, Serial No; # of Configurations)
+	- Set Address (0_Byte_Request, Max_Packet_Size, Device_0) 
+	- Get String Descriptor (8_Byte_Request, Max_Packet_Size, Device_1, String_Index_0, Lang_0) -> Languages Supported
+	- Get String Descriptor (8_Byte_Request, Max_Packet_Size, Device_1, String_Index_1, Lang_English) -> String Length
+	- Get String Descriptor (String_Length, Max_Packet_Size, Device_1, String_Index_1, Lang_English) -> String
+
+	- **Get Configuration (1_Byte_Request, Max_Packet_Size, Device_1 ) -> Default Config Number ???
+	- Get Configuration Descriptor (9 bytes) -> Config_Total_Length (of config & it's interface(s), endpoint(s), other class & vendor specific descriptor types); Config_String_Index
+	- Get Configuration Descriptor (Config_Total_Length & parse)
+	- Get String Descriptor (Config_String_Index) -> String_Length
+	- Get String Descriptor (Config_String_Index, String_Length) -> String
+	- **Set Configuration 
+*/	
+
+	/*
+	 * 8 bytes of Device Descriptor
+	 */
+	uint8_t max_packet_size = 0x08;
+
+
+	uint8_t low_speed = speed;
+	uint8_t device = 0;
+	uint8_t endpoint = 0;
+	uint8_t response_packet_sz = max_packet_size;
+	uint8_t response_num_bytes = 0x08;
+	uint8_t transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	uint8_t request_type = usb_request_types.STANDARD;
+	uint8_t recipient = usb_recipients.DEVICE;
+	uint8_t b_request = usb_standard_requests.GET_DESCRIPTOR;
+	uint16_t w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
+	uint16_t w_index = 0x0000;
+
+	uint32_t response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	// Max Packet Size limited to below 32 according to Command Register
+	//max_packet_size = (((usb_descriptor_device*)response)->b_max_packet_size);
+
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #1");
+	print_string("\n\r");
+	print_string(hex_to_str(*(uint32_t*)response));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
+	
+	/*
+	 * SET ADDRESS
+	 */
+	
+	uint8_t device_address = 0x01;
+
+	low_speed = speed;
+	device = 0;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0;
+	transfer_direction = usb_transfer_directions.HOST_TO_DEVICE;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.SET_ADDRESS; 
+	w_value = device_address; // set as device 1
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	print_string("\n\r");
+	print_string("RESPONSE #2");
+	print_string("\n\r");
+	print_string("ADDRESS SET!!!");
+
+	/*
+	 * Full Device Descriptor
+	 */
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = b_descriptor_sizes[b_descriptor_types.DEVICE];
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
+	w_index = 0x000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	uint8_t i_product = (((usb_descriptor_device*)response)->i_product);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #3");
+	print_string("\n\r");
+	//usb_descriptor_device* descriptor_device = (usb_descriptor_device*) uhci_response;
+	print_string(hex_to_str(*(uint32_t*)response));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+2)));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+3)));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+4)&0x0000ffff));
+	//uint32_t num_configs = *(((uint32_t*)(uhci_response))+4);
+
+	/*
+	* Get Product String Length
+	*/
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0x08;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.STRING << 8) | i_product;
+	w_index = usb_language_id.ENGLISH_US;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	uint8_t product_len = *(uint8_t*)response;
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #4");
+	print_string("\n\r");
+	print_string("Product Len: ");
+	print_string("\n\r");
+	print_string(hex_to_str(product_len));
+
+	/*
+	* Get Product String 
+	*/
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = product_len;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.STRING << 8) | i_product;
+	w_index = usb_language_id.ENGLISH_US;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #5");
+	print_string("\n\r");
+	for (int i=2; i<response_num_bytes; i++) {
+		uint8_t* response_ptr = (uint8_t*) response;
+		if (i%2==0) {
+			uint8_t ch = hex_to_int((uint8_t) *(response_ptr+i));
+			print_char(ch);
+		}
+	}	
+	
+
+	/*
+	 * 9 Bytes of Config Descriptor
+	 */
+
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = b_descriptor_sizes[b_descriptor_types.CONFIGURATION];
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.CONFIGURATION << 8) | 0x00; //0th config
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	uint8_t config_len = (((usb_descriptor_configuration*)(response))->w_total_length);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #6");
+	print_string("\n\r");
+	usb_parse_config( (uint8_t*)response, (uint8_t)response_num_bytes, (uint32_t*) 0x0 );
+
+	/*
+	 * FULL CONFIG
+	 */
+
+
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = config_len;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR; 
+	w_value = (b_descriptor_types.CONFIGURATION << 8) | 0x00; //0th config
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	uint8_t i_configuration = (((usb_descriptor_configuration*)response)->i_configuration);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #7");
+	print_string("\n\r");
+
+	uint32_t* endpoints_buf = (uint32_t*) malloc(8);
+
+	usb_parse_config((uint8_t*)response, (uint8_t)response_num_bytes, (uint32_t*) endpoints_buf);
+
+	usb_descriptor_endpoint* endpoint_1 = (usb_descriptor_endpoint*) *(endpoints_buf);
+	usb_descriptor_endpoint* endpoint_2 = (usb_descriptor_endpoint*) *(endpoints_buf+1);
+	uint8_t endpoint_1_addr = endpoint_1->b_endpoint_address.fields.endpoint_number;
+	uint8_t endpoint_1_direction = endpoint_1->b_endpoint_address.fields.direction;
+	uint8_t endpoint_2_addr = endpoint_2->b_endpoint_address.fields.endpoint_number;
+	uint8_t endpoint_2_direction = endpoint_2->b_endpoint_address.fields.direction;
+	
+	free(endpoints_buf);
+	
+	/*
+	 * Get Configuration String Length
+	 */
+
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0x08;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR;
+	w_value = (b_descriptor_types.STRING << 8) | i_configuration; //
+	w_index = usb_language_id.ENGLISH_US;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+
+	uint8_t config_str_len = *(uint8_t*)response;
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #8");
+	print_string("\n\r");
+	print_string(hex_to_str(config_str_len));
+	
+	/*
+	 * Get Configuration String
+	 */
+
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = config_str_len;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR;
+	w_value = (b_descriptor_types.STRING << 8) | i_configuration; //
+	w_index = usb_language_id.ENGLISH_US;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #9");
+	print_string("\n\r");
+
+	for (int i=2; i<response_num_bytes; i++) {
+		uint8_t* response_ptr = (uint8_t*) response;
+		if (i%2==0) {
+			uint8_t ch = hex_to_int((uint8_t) *(response_ptr+i));
+			print_char(ch);
+		}
+	}
+
+	/*
+	 * Set Configuration
+	 */
+
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0;
+	transfer_direction = usb_transfer_directions.HOST_TO_DEVICE;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.SET_CONFIGURATION;
+	w_value = (0x00 << 8) | 0x01; //1st configuration
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("SET CONFIGURATION");
+	print_string("\n\r");
+
+	
+	
+
+	/*
+	 * Get Configuration
+	 */
+
+	/*
+	low_speed = speed;
+	device = device_address;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 1; 
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_CONFIGURATION;
+	w_value = (0x00 << 8) | 0x00; 
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #10");
+	print_string("\n\r");
+	print_string(hex_to_str(*(uint8_t*)response));
+	*/
+
+
+	/*
+	 * 8 bytes of Device Descriptor
+	 */
+	low_speed = speed;
+	device = 1;
+	endpoint = 0;
+	response_packet_sz = max_packet_size;
+	response_num_bytes = 0x08;
+	transfer_direction = usb_transfer_directions.DEVICE_TO_HOST;
+	request_type = usb_request_types.STANDARD;
+	recipient = usb_recipients.DEVICE;
+	b_request = usb_standard_requests.GET_DESCRIPTOR;
+	w_value = (b_descriptor_types.DEVICE << 8) | 0x00;
+	w_index = 0x0000;
+
+	response = uhci_create_request (low_speed, device, endpoint, response_packet_sz, response_num_bytes, transfer_direction, request_type, recipient, b_request, w_value, w_index, uhci_frame_list_ptr);
+	
+	// Max Packet Size limited to below 32 according to Command Register
+	//max_packet_size = (((usb_descriptor_device*)response)->b_max_packet_size);
+
+
+	print_string("\n\r");
+	print_string("\n\r");
+	print_string("RESPONSE #1");
+	print_string("\n\r");
+	print_string(hex_to_str(*(uint32_t*)response));
+	print_string("\n\r");
+	print_string(hex_to_str(*(((uint32_t*)(response))+1)));
+
+
+	
+	
+
+
+
+
+}
+
 // TO DO 
 /*
  Larger Packet Sizes
- Set Configuration
  Pass Through USB
+ Memory clean up in uhci_create_request based on malloc success
 */
 
